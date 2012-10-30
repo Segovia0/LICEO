@@ -1,40 +1,59 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const { login } = require('../controllers/authController');
-
-// Configuración de Multer para las fotos
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/estudiantes'));
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
-const upload = multer({ storage });
+const upload = require('../middleware/upload');
+const auth = require('../middleware/auth');
+const { requireRole } = auth;
 
 const {
   obtenerEstudiantes,
   crearEstudiante,
   actualizarEstudiante,
   actualizarNotas,
+  cambiarEstadoEstudiante,
   eliminarEstudiante
 } = require('../controllers/estudianteController');
 
-// Rutas principales
-router.get('/', obtenerEstudiantes);
-router.post('/', upload.single('foto'), crearEstudiante);
+// Consulta: cualquier usuario autenticado.
+router.get('/', auth, obtenerEstudiantes);
 
-// ⚠️ IMPORTANTE: Esta línea de notas DEBE ir ANTES de router.put('/:id', ...)
-router.put('/:id/notas', actualizarNotas);
+// Escritura: administración y control de estudios.
+router.post(
+  '/',
+  auth,
+  requireRole('admin', 'control_estudios'),
+  upload.single('foto'),
+  crearEstudiante
+);
 
-// Rutas con ID genérico
-router.put('/:id', upload.single('foto'), actualizarEstudiante);
-router.delete('/:id', eliminarEstudiante);
+// Las rutas con subruta deben ir antes de /:id.
+router.put(
+  '/:id/notas',
+  auth,
+  requireRole('admin', 'control_estudios', 'docente'),
+  actualizarNotas
+);
 
-// Ruta protegida para el endpoint de login
-router.post('/login', login);
+router.patch(
+  '/:id/estado',
+  auth,
+  requireRole('admin', 'control_estudios'),
+  cambiarEstadoEstudiante
+);
+
+router.put(
+  '/:id',
+  auth,
+  requireRole('admin', 'control_estudios'),
+  upload.single('foto'),
+  actualizarEstudiante
+);
+
+// DELETE se mantiene por compatibilidad, pero archiva en lugar de borrar.
+router.delete(
+  '/:id',
+  auth,
+  requireRole('admin', 'control_estudios'),
+  eliminarEstudiante
+);
 
 module.exports = router;

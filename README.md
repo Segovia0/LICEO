@@ -1,162 +1,199 @@
-# 🏫 Sistema de Control de Estudio para Liceo (Full-Stack SPA)
+# 🏫 StudioCT — Sistema de Control de Estudio para Liceo
 
-Sistema web integral de gestión académica orientado a instituciones de educación media general en Venezuela. Diseñado bajo una arquitectura **SPA (Single Page Application)** moderna, liviana y responsiva, optimizada para ejecutarse de forma fluida en entornos con recursos reducidos (como distribuciones Linux livianas).
-
----
-
-## 🚀 Guía de Instalación y Configuración Inicial
-
-### 1. Requisitos Previos
-
-Asegúrate de tener instalado en tu sistema:
-
-* **Node.js** (Versión v18 o superior)
-* **npm** (Gestor de paquetes de Node)
-
-> **Nota para Linux (antiX / Debian / Ubuntu):** No se requiere la instalación de servicios externos de base de datos como MySQL, MariaDB o MongoDB. Tampoco requiere librerías nativas de compilación en C++, ya que utiliza SQLite compilado en WebAssembly.
+Sistema web integral de gestión académica para instituciones de educación media general en Venezuela. Está construido como una **SPA (Single Page Application)** liviana y responsiva, pensada para funcionar en equipos con recursos limitados (por ejemplo, distribuciones Linux ligeras como antiX, Debian o Ubuntu).
 
 ---
 
-### 2. Clonación e Instalación de Dependencias
+## 🚀 Instalación y puesta en marcha
 
-Abre la terminal en el directorio raíz de tu proyecto y ejecuta los siguientes comandos:
+### 1. Requisitos
+
+* **Node.js 22 o superior** (recomendado). El sistema usa el módulo integrado `node:sqlite`, por lo que no necesita compilar SQLite ni instalar un servidor de base de datos externo.
+* **npm**.
+* Navegador web moderno (Chrome, Firefox, Edge).
+
+> En Node.js 18/20 se utiliza la dependencia opcional `sqlite3`. Si el binario nativo no está disponible, actualice a Node.js 22+ para usar `node:sqlite` sin compilación.
+
+### 2. Dependencias
+
+Desde la carpeta del proyecto:
 
 ```bash
-# 1. Instalar las dependencias del proyecto
-npm install express cors multer sql.js
-
+npm install
 ```
 
-#### Explicación de Dependencias Instaladas:
+No es necesario instalar Express, CORS, Multer ni SQLite por separado: ya están declarados en `package.json`.
 
-* **`express`**: Framework web para construir la API RESTful (rutas y controladores backend).
-* **`cors`**: Middleware para habilitar el intercambio de recursos de origen cruzado (CORS).
-* **`multer`**: Middleware para la gestión y carga de archivos multimedia (fotografías de perfil) al servidor.
-* **`sql.js`**: Motor relacional de **SQLite en WebAssembly (JavaScript puro)**. Garantiza portabilidad total en cualquier distribución de Linux evitando errores de compilación `GLIBC`.
+### 3. Variables de entorno
+
+Copie el archivo de ejemplo y edítelo:
+
+```bash
+cp .env.example .env
+```
+
+Variables principales:
+
+| Variable | Descripción |
+|---|---|
+| `PORT` | Puerto HTTP (por defecto `3000`). |
+| `JWT_SECRET` | Secreto para firmar sesiones. **Obligatorio**, mínimo 32 caracteres. Genérelo con `openssl rand -hex 32`. |
+| `ADMIN_DEFAULT_USER` | Usuario administrador a crear si la tabla `usuarios` está vacía. |
+| `ADMIN_DEFAULT_PASS` | Clave inicial para ese administrador. Si es débil, se exigirá cambiarla al primer inicio de sesión. |
+| `DB_PATH` | Ruta alternativa de la base SQLite. Útil para pruebas o restauraciones controladas. |
+| `CORS_ORIGIN` | Orígenes permitidos separados por coma. Si se omite, solo se permite el mismo origen. |
+| `TRUST_PROXY` | Poner `true` si está detrás de Nginx/Caddy para registrar la IP real. |
+| `JWT_EXPIRES_IN` | Duración de la sesión (por defecto `8h`). |
+| `JWT_PASSWORD_CHANGE_EXPIRES_IN` | Duración del token temporal para cambio de clave (por defecto `15m`). |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_REFRESH_TOKEN` | Opcionales, solo para respaldos en Google Drive. |
+
+La aplicación **no arranca** si `JWT_SECRET` falta o es demasiado débil.
+
+### 4. Iniciar el sistema
+
+```bash
+npm start
+# o en desarrollo:
+npm run dev
+```
+
+Acceda a `http://localhost:3000`.
+
+En el primer arranque se ejecutan automáticamente las migraciones y se crea el administrador si no existe ningún usuario.
 
 ---
 
-### 3. Estructura de Directorios del Proyecto
+## 🔐 Seguridad y usuarios
 
-Asegúrate de mantener la siguiente estructura en tu proyecto:
+* Las contraseñas se almacenan con **bcrypt**. Las claves antiguas en texto plano se migran al iniciar sesión.
+* Si el administrador conserva una contraseña débil conocida (por ejemplo, la clave histórica `1234`), el sistema entrega un **token temporal** que solo permite cambiar la contraseña. Hasta hacerlo no se puede acceder a estudiantes, notas ni respaldos.
+* El cambio de contraseña está disponible en la barra lateral con el botón **🔑 Cambiar contraseña**.
+* Los intentos de inicio de sesión están limitados a **10 por cada 15 minutos** por usuario/IP.
+* Las rutas de escritura están restringidas por rol:
+  * `admin`: todo el sistema.
+  * `control_estudios`: estudiantes, notas y respaldos.
+  * `docente`: carga de calificaciones.
+* Las acciones sensibles (login, cambios de estudiantes, notas, estados, respaldos y restauraciones) se registran en la tabla `auditoria`.
+
+> **Instalaciones anteriores:** conserve la clave actual del administrador. Si es la clave histórica por defecto (`1234`) o una clave débil conocida, el sistema solicitará cambiarla al iniciar sesión. `ADMIN_DEFAULT_PASS` solo se usa cuando la tabla de usuarios está vacía; no restablece una clave existente.
+
+---
+
+## 🗂️ Estructura del proyecto
 
 ```text
 LICEO/
 ├── config/
-│   └── db.js                 # Inicialización y utilidades de la BD SQLite (sql.js)
-├── controllers/
-│   └── estudianteController.js # Lógica de negocio y consultas SQL CRUD
-├── middleware/
-│   └── upload.js             # Configuración de almacenamiento de fotos con Multer
-├── public/
-│   └── index.html            # Interfaz SPA (HTML5, CSS3, JavaScript Vanilla)
-├── routes/
-│   └── estudianteRoutes.js   # Definición de rutas API REST
-├── uploads/
-│   └── estudiantes/          # Carpeta donde se almacenan las fotos subidas
-├── liceo.sqlite              # Archivo de base de datos relacional (se crea automáticamente)
-├── package.json              # Configuración y dependencias del proyecto
-└── server.js                 # Punto de entrada y servidor principal Express
-
+│   ├── constants.js          # Catálogos y normalización académica
+│   ├── db.js                 # Conexión SQLite y PRAGMAs
+│   ├── migrations.js         # Migraciones idempotentes al arrancar (incluye tabla migraciones)
+│   └── security.js           # Validación de JWT y expiraciones
+├── controllers/              # Lógica de autenticación y estudiantes
+├── middleware/               # Auth, roles, uploads, rate limit, cabeceras
+├── models/                   # Modelo de usuarios
+├── routes/                   # Rutas de la API
+├── utils/                    # Notas, auditoría y respaldos
+├── public/                   # SPA (index.html) y login
+├── uploads/estudiantes/      # Fotografías de estudiantes
+├── uploads/temp/             # Respaldos temporales y copias previas a restaurar
+├── liceo.sqlite              # Base de datos SQLite
+├── seed_estudiantes.js       # Seed opcional de datos de prueba
+├── fix_anos.js               # Mantenimiento manual de datos académicos
+└── server.js                 # Punto de entrada Express
 ```
 
 ---
 
-### 4. Cómo Iniciar la Aplicación
+## 🛠️ Funcionalidades
 
-Para poner en marcha el servidor y la interfaz web:
+### 📊 Panel general
+
+* **Total Matriculados:** expedientes en estado `Activo`.
+* **Nuevos Ingresos:** estudiantes con condición `Nuevo Ingreso`.
+* **Materias Reprobadas:** asignaturas con definitiva menor a 10.
+* **Promedio General:** promedio de las materias que tienen los **tres lapsos cargados**.
+* Gráficos de distribución por condición, matrícula por año, promedio por asignatura y evolución por lapso.
+
+Los promedios ignoran las materias sin calificaciones completas. Una nota vacía ya no se trata como cero.
+
+### 👥 Gestión de estudiantes
+
+* Inscripción y edición con validación de nombre, cédula, fecha de nacimiento, año, sección y condición.
+* Código de expediente automático `EXP-YYYY-XXXX`.
+* Fotografía con validación de tipo y tamaño (máximo 5 MB).
+* Filtros por texto, año, sección y estado.
+* **Archivado sin borrado físico:** los estados disponibles son `Activo`, `Retirado`, `Graduado` y `Trasladado`. Al archivar se conservan datos, fotografías y calificaciones, y el expediente puede reactivarse.
+* La ruta `DELETE` se mantiene por compatibilidad, pero archiva en lugar de eliminar.
+
+### 📝 Calificaciones
+
+* 9 asignaturas oficiales y 3 lapsos (escala 0–20).
+* Los campos vacíos se guardan como `NULL`, no como `0`.
+* La **definitiva** solo existe cuando los tres lapsos están cargados.
+* Validación estricta de rango (0–20), asignaturas permitidas, duplicados y transacciones.
+* Los promedios y el boletín muestran `—` cuando falta un lapso.
+
+### 📜 Boletín
+
+* Vista A4 imprimible con datos del estudiante, estado, calificaciones por lapso, definitivas y líneas de firma.
+* Oculta filtros y botones al imprimir o guardar como PDF.
+
+---
+
+## 💾 Respaldos y restauración
+
+Desde **Mantenimiento y Respaldos**:
+
+1. **Copia local `.sqlite`:** genera una instantánea consistente con `VACUUM INTO`, incluso con el sistema en uso.
+2. **Respaldo completo `.tar.gz`:** incluye la base de datos y todas las fotografías.
+3. **Google Drive (opcional):** sube una instantánea de la base si las credenciales OAuth están configuradas.
+4. **Restaurar:** acepta `.sqlite`, `.db`, `.tar.gz` o `.tgz`.
+
+La restauración:
+
+* Verifica la integridad del archivo SQLite y la presencia de las tablas y columnas mínimas.
+* Exige rol `admin`.
+* Conserva una copia de seguridad previa en `uploads/temp/` antes de reemplazar la base.
+* Ejecuta las migraciones automáticamente después de restaurar.
+* Si el respaldo es completo, restaura también las fotografías.
+
+> Los respaldos completos son la opción recomendada para trasladar el sistema a otro equipo. Una copia `.sqlite` no incluye las fotografías.
+
+---
+
+## 🔧 Mantenimiento
+
+* Las migraciones de `config/migrations.js` son **idempotentes**: se pueden ejecutar en cada arranque sin duplicar datos.
+* Normalizan años (`1ro` → `1er Año`), condiciones (`Repitiente` → `Repitente`), estados y asignaturas faltantes.
+* Las cédulas se guardan solo con dígitos: `V-12345678`, `12345678` y `12.345.678` se consideran la misma cédula.
+* Convierten a `NULL` las notas históricas que solo tenían ceros de relleno. Esta corrección se ejecuta **una sola vez**, registrada en la tabla `migraciones`, para no borrar ceros legítimos cargados después.
+* Crean índices únicos para evitar notas duplicadas por estudiante/asignatura y usuarios duplicados.
+
+Para ejecutar la normalización sin iniciar la API:
 
 ```bash
-# Iniciar el servidor
-node server.js
-
+node fix_anos.js
 ```
 
-Salida esperada en la consola:
-
-```text
-✅ Base de datos SQLite (SQL Relacional) inicializada correctamente
-🚀 Servidor ejecutándose en http://localhost:3000
-📁 Base de datos relacional SQLite activa en liceo.sqlite
-
-```
-
-Abre cualquier navegador web y accede a:
-👉 **`http://localhost:3000`**
+El archivo `seed_estudiantes.js` es solo para datos de prueba. **No lo ejecute sobre la base real** salvo que desee agregar estudiantes ficticios.
 
 ---
 
-## 🛠️ Explicación Detallada de Funciones e Implementación Técnica
+## 📋 Notas de migración de datos
 
-### 1. 📊 Panel General (Dashboard Métrico)
+Al actualizar desde la versión anterior:
 
-* **Descripción:** Presenta un resumen estadístico en tiempo real del estado de la matrícula escolar.
-* **Métricas que calcula:**
-* **Total Matriculados:** Conteo global de expedientes activos.
-* **Nuevos Ingresos:** Alumnos inscritos bajo la condición "Nuevo Ingreso".
-* **Materias Pendientes:** Estudiantes en condición de arrastre/reparación.
-* **Promedio General:** Cálculo acumulado del rendimiento académico de todo el plantel sobre la escala de 0 a 20 puntos.
-
-
-* **Implementación:** Se calcula en tiempo real dentro del cliente (`public/index.html`) iterando sobre la colección de estudiantes recibida desde la API REST mediante funciones reductoras de JavaScript.
+* Se agregaron las columnas `estado`, `fecha_retiro`, `motivo_retiro` y `debe_cambiar_clave`.
+* Se creó la tabla `auditoria`.
+* Los años y condiciones inconsistentes se normalizaron.
+* Las 33 filas de notas con solo ceros se convirtieron a `NULL`.
+* Las 3 filas con un solo lapso cargado y ceros de relleno se convirtieron a `NULL` en los lapsos faltantes.
+* Se conservaron los 106 estudiantes y las 954 filas de notas.
 
 ---
 
-### 2. 👥 Gestión de Estudiantes (CRUD Completo y Carga de Foto)
-
-* **Inscripción y Edición:** Permite registrar y modificar datos personales del alumno: Nombre, Cédula, Fecha de Nacimiento, Año a Cursar (1ro a 5to), Sección (A a D) y Condición Académica.
-* **Asignación de Expediente Automático:** Genera un código correlativo único en formato `EXP-YYYY-XXXX` mediante consultas SQL al momento del registro.
-* **Carga de Fotografía:** Integración con `multer` para procesar imágenes adjuntas. La foto se guarda físicamente en `/uploads/estudiantes/` y su ruta relativa se almacena en la columna `foto_url`.
-* **Barra de Filtros Multicriterio:** Permite filtrar instantáneamente por coincidencia de texto en Cédula/Nombre/Expediente y por desplegables de Año Escolar y Sección.
-* **Eliminación:** Borra de forma en cascada el expediente y las calificaciones asociadas en la base de datos, eliminando también la imagen del servidor mediante el módulo `fs`.
-
----
-
-### 3. 📝 Carga y Gestión de Calificaciones (9 Materias / 3 Lapsos)
-
-* **Estructura Académica:** Basada en el pensum de Educación Media General en Venezuela con 9 asignaturas oficiales (*Castellano, Matemáticas, Inglés, Educación Física, Biología, Física, Química, Historia y Geografía*).
-* **Asignación Automática:** Cada estudiante creado inicializa automáticamente 9 registros en la tabla relacional `notas` vinculados a su `estudiante_id`.
-* **Matriz de Notas:** Permite cargar y editar las notas de los Lapsos 1, 2 y 3 (escala 0-20). Calcula automáticamente la nota definitiva por asignatura en tiempo real con alertas de color (Verde $\ge 10$, Rojo $< 10$).
-
----
-
-### 4. 📜 Generación de Boletín Informativo Oficial (A4 Imprimible)
-
-* **Plantilla Formateada:** Genera una vista de hoja oficial A4 con membrete institucional, datos del estudiante, tabla de notas completas por lapso, promedio general y líneas para firmas del Director(a) y Control de Estudio.
-* **Estilos CSS para Impresión (`@media print`):** Oculta automáticamente la barra lateral (`.sidebar`), botones y filtros durante la impresión, permitiendo guardar el boletín directamente como un archivo PDF limpio y profesional desde el navegador (`Ctrl + P`).
-
-
-
-
-
-## 🚀 Actualizacion y mejoras del Sistema 03/11/2026
-
-El sistema ha sido desarrollado bajo una arquitectura modular y limpia, incorporando las siguientes características técnicas y de seguridad:
-
-### 1. 🔐 Seguridad y Autenticación de Usuarios
-* **Protección de Rutas en el Frontend:** Validación instantánea en el cliente (`localStorage`) antes de renderizar las vistas protegidas, redirigiendo automáticamente a `login.html` si no existe una sesión activa.
-* **Controlador de Acceso Backend (`authController.js`):** Gestión centralizada de peticiones HTTP para el inicio de sesión seguro contra la base de datos.
-* **Cierre de Sesión Global:** Botón de salida integrado directamente en la barra lateral (`sidebar`) para invalidar la sesión de forma limpia.
-
-### 2. ⚡ Auto-Inicialización del Servidor (`Server Bootstrap`)
-* **Modelo de Datos Modular (`tabla-model`):** Arquitectura desacoplada para interactuar con SQLite mediante métodos limpios (`all`, `insert`).
-* **Bootstrap del Administrador por Defecto:** Al iniciar el servidor por primera vez (`node server.js`), el sistema verifica de forma asíncrona la existencia de registros y **crea automáticamente el usuario administrador por defecto** (`admin` / `1234`) si la tabla se encuentra vacía, evitando configuraciones manuales complejas.
-
-### 3. 🔍 Búsqueda y Filtrado Interactivo en Tiempo Real
-* **Filtros Combinados:** Implementación de barras de búsqueda dinámica tanto en el CRUD principal de estudiantes como en los módulos de **Carga de Notas** y **Boletín Escolar**.
-* **Criterios Múltiples:** Permite buscar simultáneamente por coincidencia de texto (Cédula, Nombre o Expediente) y filtrar de manera cruzada por **Año** y **Sección** en tiempo real.
-
-### 4. 📜 Generación de Boletines Oficiales (Listos para Impresión)
-* **Formato Académico A4:** Módulo adaptado para maquetar el boletín informativo oficial con los membretes del Ministerio del Poder Popular para la Educación y los tres lapsos evaluativos.
-* **Estilos de Impresión Optimizados (`@media print`):** Reglas CSS dedicadas que ocultan automáticamente la barra lateral, botones y elementos de navegación al exportar o imprimir en formato físico o PDF.
-
-
----
-    
-## 👥 Créditos y Desarrolladores del Proyecto
+## 👥 Créditos
 
 * **Giovanny Segovia** — C.I: 31.588.187
 * **Wilfredo Alvarez** — C.I: 30.654.549
 * **Carlos Colmenarez** — C.I: 30.494.549
-
-```

@@ -1,21 +1,26 @@
 {
   "name": "control-estudio-liceo",
   "version": "1.0.0",
-  "description": "Sistema de Control de Estudio de Liceo con MySQL/phpMyAdmin",
+  "description": "Sistema Tecnológico para el Control, Seguimiento y Registro Estudiantil (StudioCT)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
+    "dotenv": "^18.0.10",
     "express": "^4.22.3",
+    "googleapis": "^189.0.0",
+    "jsonwebtoken": "^9.0.3",
     "multer": "^1.4.5-lts.1",
-    "mysql2": "^3.24.5",
-    "sql.js": "^1.14.2",
-    "sqlite3": "^6.0.1",
     "sqlite3-tab": "^2.2.1",
-    "tabla-model": "^2.1.0"
+    "tabla-model": "^2.1.0",
+    "tar": "^7.5.22"
+  },
+  "optionalDependencies": {
+    "sqlite3": "^6.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

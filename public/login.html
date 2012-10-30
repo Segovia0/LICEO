@@ -156,18 +156,22 @@
   </div>
 
   <script>
-    // Si ya está autenticado, redirige al sistema principal
-    if (localStorage.getItem('auth_liceo') === 'true') {
+    // Si ya existe un token guardado, redirigir al sistema principal
+    if (localStorage.getItem('token_liceo')) {
       window.location.href = '/index.html';
     }
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const usuario = document.getElementById('login-user').value;
-      const clave = document.getElementById('login-pass').value;
+      const usuario = document.getElementById('login-user').value.trim();
+      const clave = document.getElementById('login-pass').value.trim();
+      const btn = document.querySelector('.btn-submit-login');
 
       try {
+        btn.disabled = true;
+        btn.innerText = 'Verificando...';
+
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -176,8 +180,10 @@
 
         const data = await res.json();
 
-        if (data.success) {
-          localStorage.setItem('auth_liceo', 'true');
+        if (data.success && data.token) {
+          localStorage.setItem('token_liceo', data.token);
+          localStorage.setItem('user_liceo', JSON.stringify(data.user));
+          localStorage.setItem('debe_cambiar_clave', data.debeCambiarClave ? '1' : '0');
           window.location.href = '/index.html';
         } else {
           alert(data.message || 'Usuario o contraseña incorrectos');
@@ -185,6 +191,9 @@
       } catch (error) {
         console.error('Error de conexión:', error);
         alert('No se pudo establecer conexión con el servidor.');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Continuar';
       }
     });
   </script>

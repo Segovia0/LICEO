@@ -10,19 +10,30 @@ if (!fs.existsSync(uploadDir)) {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
-    const cedula = req.body.cedula ? req.body.cedula.replace(/\s+/g, '') : 'estudiante';
-    const ext = path.extname(file.originalname);
-    cb(null, `foto-${cedula}-${Date.now()}${ext}`);
+    // Sanitizar cédula para evitar caracteres extraños o path traversal
+    const rawCedula = req.body && req.body.cedula ? String(req.body.cedula).replace(/[^a-zA-Z0-9_-]/g, '') : 'estudiante';
+    const ext = path.extname(file.originalname).toLowerCase();
+    const safeExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext) ? ext : '.jpg';
+    cb(null, `foto-${rawCedula}-${Date.now()}${safeExt}`);
   }
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-  if (allowedTypes.includes(file.mimetype)) {
+  const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  const allowedExts = ['.jpg', '.jpeg', '.png', '.webp'];
+
+  if (allowedMimes.includes(file.mimetype) && allowedExts.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Solo se permiten imágenes (JPG, PNG, WEBP).'), false);
+    const error = new Error('Solo se permiten imágenes válidas en formato JPG, PNG o WEBP.');
+    error.status = 400;
+    cb(error, false);
   }
 };
 
-module.exports = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+module.exports = multer({ 
+  storage, 
+  fileFilter, 
+  limits: { fileSize: 5 * 1024 * 1024 } // Límite de 5 MB
+});

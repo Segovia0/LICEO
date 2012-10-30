@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Control de Estudio - Liceo</title>
+  <title>Sistema de Control de Estudio - StudioCT</title>
+  <script src="/chart.min.js"></script>
   <style>
     :root {
       --bg-sidebar: #0f172a;
       --bg-active: #2563eb;
-      --bg-main: #f8fafc;
+      --bg-main: #f1f5f9;
       --text-dark: #1e293b;
       --text-muted: #64748b;
       --border-color: #e2e8f0;
@@ -17,7 +18,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
     body { display: flex; height: 100vh; background-color: var(--bg-main); color: var(--text-dark); overflow: hidden; }
 
-    /* SIDEBAR ORIGINAL */
+    /* SIDEBAR */
     .sidebar { width: 260px; background-color: var(--bg-sidebar); color: #fff; display: flex; flex-direction: column; flex-shrink: 0; }
     .brand { padding: 24px 20px; font-size: 1.2rem; font-weight: 700; border-bottom: 1px solid #1e293b; }
     .sidebar nav { margin-top: 15px; flex: 1; }
@@ -32,7 +33,96 @@
     .view-section { display: none; }
     .view-section.active { display: block; }
 
-    /* TARJETAS METRICAS */
+    /* ============================================================
+       DASHBOARD — KPI CARDS DINÁMICAS
+    ============================================================ */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 22px 24px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      transition: transform .2s, box-shadow .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.1); }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 4px; height: 100%;
+      border-radius: 14px 0 0 14px;
+    }
+    .kpi-card.blue::before  { background: #2563eb; }
+    .kpi-card.green::before { background: #10b981; }
+    .kpi-card.amber::before { background: #f59e0b; }
+    .kpi-card.rose::before  { background: #f43f5e; }
+
+    .kpi-icon {
+      width: 52px; height: 52px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .kpi-card.blue  .kpi-icon { background: #eff6ff; }
+    .kpi-card.green .kpi-icon { background: #ecfdf5; }
+    .kpi-card.amber .kpi-icon { background: #fffbeb; }
+    .kpi-card.rose  .kpi-icon { background: #fff1f2; }
+
+    .kpi-body { flex: 1; }
+    .kpi-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+    .kpi-value {
+      font-size: 2rem; font-weight: 800;
+      color: var(--text-dark);
+      line-height: 1.1;
+      margin-top: 4px;
+      transition: all .4s;
+    }
+    .kpi-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+
+    /* ============================================================
+       DASHBOARD — GRID DE GRÁFICOS
+    ============================================================ */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 20px;
+    }
+    .chart-card {
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid var(--border-color);
+      padding: 22px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .chart-card.full-width { grid-column: 1 / -1; }
+    .chart-card h4 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 4px;
+    }
+    .chart-card .chart-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .chart-card canvas { max-height: 240px; }
+    .chart-card.full-width canvas { max-height: 200px; }
+
+    /* TARJETAS METRICAS (legacy, otros módulos) */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
     .stat-card { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); }
     .stat-card .title { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
@@ -51,32 +141,36 @@
     .filter-bar input, .filter-bar select { padding: 9px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.88rem; outline: none; }
     .filter-bar input { flex: 1; min-width: 200px; }
 
-    /* PREVISUALIZADOR DE FOTO */
-    .photo-preview-container { display: flex; align-items: center; gap: 15px; margin-top: 5px; }
-    .photo-preview { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--bg-active); background: #e2e8f0; display: none; }
+    /* MODAL FLOTANTE */
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+    .modal-content { background: #fff; padding: 30px; border-radius: 10px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+    .btn-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted); }
 
     .btn { padding: 10px 18px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
     .btn-primary { background-color: var(--bg-active); color: #fff; }
     .btn-primary:hover { background-color: #1d4ed8; }
     .btn-danger { background-color: #ef4444; color: #fff; }
     .btn-warning { background-color: #f59e0b; color: #fff; }
+    .btn-success { background-color: #10b981; color: #fff; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { text-align: left; padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
     th { background-color: #f1f5f9; color: var(--text-muted); }
     .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #cbd5e1; }
 
+    /* ESTADOS DEL ESTUDIANTE */
+    .badge-estado { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+    .badge-activo { background: #dcfce7; color: #166534; }
+    .badge-retirado { background: #fee2e2; color: #991b1b; }
+    .badge-graduado { background: #dbeafe; color: #1e40af; }
+    .badge-trasladado { background: #fef3c7; color: #92400e; }
+
     /* MATRIZ DE NOTAS */
     .nota-input { width: 60px; text-align: center; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; }
 
-    /* BOLETÍN EN FORMATO A4 LISTO PARA IMPRIMIR O DESCARGAR */
+    /* BOLETÍN A4 */
     .boletin-paper { background: #fff; border: 1px solid var(--border-color); padding: 40px; max-width: 800px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-radius: 8px; }
-    .boletin-header { text-align: center; border-bottom: 2px solid var(--text-dark); padding-bottom: 15px; margin-bottom: 20px; }
-    .boletin-header h2 { font-size: 1.2rem; }
-    .boletin-header p { font-size: 0.85rem; color: var(--text-muted); }
-    .signatures { display: flex; justify-content: space-between; margin-top: 50px; text-align: center; }
-    .sig-line { width: 200px; border-top: 1px solid var(--text-dark); font-size: 0.8rem; padding-top: 5px; }
-
     @media print {
       body { background: #fff; }
       .sidebar, .header, .no-print { display: none !important; }
@@ -84,124 +178,288 @@
       .boletin-paper { border: none; box-shadow: none; padding: 0; width: 100%; max-width: 100%; }
     }
 
-/* Oculta todo el cuerpo del index por defecto para evitar el destello */
-  body.checking-auth {
-    visibility: hidden;
-    background: #0f172a;
-  }
-
+    body.checking-auth { visibility: hidden; background: #0f172a; }
   </style>
 </head>
 <body class="checking-auth">
 
   <script>
-    // Verificación inmediata antes de renderizar cualquier elemento visual
-    if (localStorage.getItem('auth_liceo') !== 'true') {
+    // Escape de caracteres HTML para prevenir Stored XSS
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Helper centralizado para peticiones autenticadas con Bearer JWT
+    async function authFetch(url, options = {}) {
+      const token = localStorage.getItem('token_liceo');
+      if (!token) {
+        logout();
+        throw new Error('No hay sesión activa');
+      }
+
+      options.headers = options.headers || {};
+      if (!(options.body instanceof FormData)) {
+        if (!options.headers['Content-Type']) {
+          options.headers['Content-Type'] = 'application/json';
+        }
+      }
+      options.headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(url, options);
+
+      if (res.status === 401) {
+        alert('Sesión expirada o no válida. Redirigiendo al login...');
+        logout();
+        throw new Error('No autorizado');
+      }
+
+      if (res.status === 403) {
+        // Un 403 por rol no debe cerrar la sesión; solo el token temporal
+        // de cambio de contraseña exige mostrar el formulario correspondiente.
+        const copia = res.clone();
+        const datos = await copia.json().catch(() => null);
+
+        if (datos && datos.code === 'PASSWORD_CHANGE_REQUIRED') {
+          mostrarModalCambioClave(true);
+          throw new Error('Debe cambiar la contraseña');
+        }
+      }
+
+      return res;
+    }
+
+    // Comprobación de autenticación al cargar
+    const token = localStorage.getItem('token_liceo');
+    if (!token) {
       window.location.href = '/login.html';
     } else {
-      // Si está autenticado, hacemos visible el body de inmediato
       document.body.classList.remove('checking-auth');
     }
 
-    // Función para cerrar sesión
     function logout() {
+      localStorage.removeItem('token_liceo');
+      localStorage.removeItem('user_liceo');
       localStorage.removeItem('auth_liceo');
+      localStorage.removeItem('debe_cambiar_clave');
       window.location.href = '/login.html';
     }
+
+    // 1. Descargar copia local de la base de datos (.sqlite) protegida con token
+    async function descargarRespaldoLocal() {
+      try {
+        const res = await authFetch('/api/backup/descargar');
+        if (!res.ok) throw new Error('No se pudo generar la descarga');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const fecha = new Date().toISOString().split('T')[0];
+        a.download = `StudioCT_Backup_${fecha}.sqlite`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Error al descargar:', err);
+        alert('Error al descargar la base de datos.');
+      }
+    }
+
+    // 2. Descargar respaldo completo (base de datos + fotografías)
+    async function descargarRespaldoCompleto() {
+      try {
+        const res = await authFetch('/api/backup/descargar-completo');
+        if (!res.ok) throw new Error('No se pudo generar el respaldo completo');
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const fecha = new Date().toISOString().split('T')[0];
+        a.download = `StudioCT_RespaldoCompleto_${fecha}.tar.gz`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Error al descargar respaldo completo:', err);
+        alert('Error al generar el respaldo completo.');
+      }
+    }
+
+    // 3. Subir copia automática a Google Drive mediante OAuth2
+    async function subirRespaldoDrive() {
+      const btn = document.getElementById('btnDrive');
+      btn.disabled = true;
+      btn.innerText = '⏳ Subiendo a la nube...';
+
+      try {
+        const res = await authFetch('/api/backup/cloud-backup', { 
+          method: 'POST' 
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alert('¡Éxito! Respaldo guardado correctamente en tu Google Drive.');
+        } else {
+          alert('Error: ' + (data.message || 'No se pudo completar la subida'));
+        }
+      } catch (error) {
+        console.error('Error al respaldar en Drive:', error);
+        alert('Error de red al conectar con el servidor.');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Subir a Google Drive';
+      }
+    }
+
+    // 3. Restaurar la base de datos seleccionando un archivo .sqlite local
+    document.addEventListener('DOMContentLoaded', () => {
+      const formRestaurar = document.getElementById('formRestaurar');
+      
+      if (formRestaurar) {
+        formRestaurar.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          if (!confirm('⚠️ ADVERTENCIA: Esta acción sobrescribirá la base de datos actual con el archivo seleccionado. ¿Desea continuar?')) {
+            return;
+          }
+
+          const fileInput = document.getElementById('inputBackupFile');
+          if (!fileInput.files[0]) {
+            alert('Por favor seleccione un archivo de respaldo válido.');
+            return;
+          }
+
+          const formData = new FormData();
+          formData.append('backupFile', fileInput.files[0]);
+
+          try {
+            const res = await authFetch('/api/backup/restaurar', {
+              method: 'POST',
+              body: formData
+            });
+            const data = await res.json();
+
+            if (data.success) {
+              alert('¡Base de datos restaurada con éxito! El sistema se recargará.');
+              window.location.reload();
+            } else {
+              alert('Error al restaurar: ' + (data.message || 'Error desconocido'));
+            }
+          } catch (error) {
+            console.error('Error en restauración:', error);
+            alert('Ocurrió un error al procesar el archivo en el servidor.');
+          }
+        });
+      }
+    });
+
   </script>
 
   <!-- BARRA LATERAL -->
   <aside class="sidebar">
-    <div class="brand">🏫 STUDIOCT</div>
+    <div class="brand">SDCE</div>
     <nav>
-      <div class="nav-item active" onclick="switchTab('dashboard', event)">📊 Dashboard</div>
-      <div class="nav-item" onclick="switchTab('estudiantes', event)">👥 Estudiantes (CRUD)</div>
-      <div class="nav-item" onclick="switchTab('notas', event)">📝 Carga de Notas</div>
-      <div class="nav-item" onclick="switchTab('boletin', event)">📜 Boletín Escolar</div>
+      <div class="nav-item active" onclick="switchTab('dashboard', event)">Dashboard</div>
+      <div class="nav-item" onclick="switchTab('estudiantes', event)">Estudiantes</div>
+      <div class="nav-item" onclick="switchTab('notas', event)">Carga de Notas</div>
+      <div class="nav-item" onclick="switchTab('boletin', event)">Boletín Escolar</div>
+      <div class="nav-item" id="nav-backup" onclick="switchTab('backup', event)">Mantenimiento y Respaldos</div>
     </nav>
-    <div class="user-footer">Sistema Escolar v2.0</div>
-    <button onclick="logout()" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.75rem;">Salir</button>
+    <div class="user-footer" id="usuario-actual">Sesión activa</div>
+    <button onclick="mostrarModalCambioClave()" class="btn" style="margin: 0 15px 8px; padding: 6px 10px; font-size: 0.75rem; background: #334155; color: #fff;">🔑 Cambiar contraseña</button>
+    <button onclick="logout()" class="btn btn-danger" style="margin: 0 15px 15px; padding: 6px 10px; font-size: 0.75rem;">Salir</button>
   </aside>
 
   <main class="main-wrapper">
     <header class="header">
       <h2 id="page-title">Panel General</h2>
-      <span style="font-size: 0.9rem; color: var(--text-muted);">Bienvenido</span>
+      <span id="welcome-user" style="font-size: 0.9rem; color: var(--text-muted);">Bienvenido</span>
     </header>
 
     <div class="content-body">
       
       <!-- 1. DASHBOARD -->
       <section id="view-dashboard" class="view-section active">
-        <div class="stats-grid">
-          <div class="stat-card"><div class="title">Total Matriculados</div><div class="value" id="stat-total">0</div></div>
-          <div class="stat-card"><div class="title">Nuevos Ingresos</div><div class="value" id="stat-nuevos">0</div></div>
-          <div class="stat-card"><div class="title">Materias Pendientes</div><div class="value" id="stat-pendientes">0</div></div>
-          <div class="stat-card"><div class="title">Promedio General</div><div class="value" id="stat-promedio">0.0</div></div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card blue">
+            <div class="kpi-icon">🎓</div>
+            <div class="kpi-body">
+              <div class="kpi-label">Total Matriculados</div>
+              <div class="kpi-value" id="stat-total">0</div>
+              <div class="kpi-sub" id="kpi-sub-total">Expedientes activos</div>
+            </div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-icon">✅</div>
+            <div class="kpi-body">
+              <div class="kpi-label">Nuevos Ingresos</div>
+              <div class="kpi-value" id="stat-nuevos">0</div>
+              <div class="kpi-sub" id="kpi-sub-nuevos">0% del total</div>
+            </div>
+          </div>
+          <div class="kpi-card amber">
+            <div class="kpi-icon">⚠️</div>
+            <div class="kpi-body">
+              <div class="kpi-label">Materias Reprobadas</div>
+              <div class="kpi-value" id="stat-pendientes">0</div>
+              <div class="kpi-sub" id="kpi-sub-pendientes">Con definitiva menor a 10</div>
+            </div>
+          </div>
+          <div class="kpi-card rose">
+            <div class="kpi-icon">📊</div>
+            <div class="kpi-body">
+              <div class="kpi-label">Promedio General</div>
+              <div class="kpi-value" id="stat-promedio">0.0</div>
+              <div class="kpi-sub" id="kpi-sub-promedio">Escala 0–20 pts</div>
+            </div>
+          </div>
         </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h4>Distribución por Condición</h4>
+            <div class="chart-sub">Composición de la matrícula activa</div>
+            <canvas id="chartCondicion"></canvas>
+          </div>
+          <div class="chart-card">
+            <h4>Matrícula por Año Escolar</h4>
+            <div class="chart-sub">Alumnos inscritos por grado (1ro–5to)</div>
+            <canvas id="chartAnio"></canvas>
+          </div>
+          <div class="chart-card">
+            <h4>Promedio por Asignatura</h4>
+            <div class="chart-sub">Rendimiento general por materia</div>
+            <canvas id="chartMaterias"></canvas>
+          </div>
+          <div class="chart-card full-width">
+            <h4>Evolución del Promedio por Lapso</h4>
+            <div class="chart-sub">Tendencia académica del plantel (Lapso 1, 2 y 3)</div>
+            <canvas id="chartLapsos"></canvas>
+          </div>
+        </div>
+
       </section>
 
-      <!-- 2. GESTIÓN DE ESTUDIANTES -->
+      <!-- 2. GESTIÓN DE ESTUDIANTES (CRUD CON MODAL FLOTANTE) -->
       <section id="view-estudiantes" class="view-section">
-        
-        <!-- FORMULARIO CON PREVISUALIZACIÓN DE FOTO (MULTER) -->
         <div class="panel-box">
-          <h3 id="form-title">Inscribir Nuevo Estudiante</h3>
-          <form id="student-form">
-            <input type="hidden" id="student-id">
-            <div class="form-grid">
-              <div class="form-group"><label>Nombre y Apellido</label><input type="text" id="nombreApellido" required placeholder="Nombre y Apellido"></div>
-              <div class="form-group"><label>Cédula de Identidad</label><input type="text" id="cedula" required placeholder="V-"></div>
-              <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="fechaNacimiento" required></div>
-              <div class="form-group">
-                <label>Año a Cursar</label>
-                <select id="anoCursar" required>
-                  <option value="1er Año">1er Año</option>
-                  <option value="2do Año">2do Año</option>
-                  <option value="3er Año">3er Año</option>
-                  <option value="4to Año">4to Año</option>
-                  <option value="5to Año">5to Año</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Sección Asignada</label>
-                <select id="seccion" required>
-                  <option value="A">Sección A</option>
-                  <option value="B">Sección B</option>
-                  <option value="C">Sección C</option>
-                  <option value="D">Sección D</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Condición del Estudiante</label>
-                <select id="condicion" required>
-                  <option value="Nuevo Ingreso">Nuevo Ingreso</option>
-                  <option value="Regular">Regular</option>
-                  <option value="Repitente">Repitente</option>
-                  <option value="Materia Pendiente">Materia Pendiente</option>
-                </select>
-              </div>
-            </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>Gestión e Inscripción de Estudiantes</h3>
+            <button class="btn btn-primary" id="btn-inscribir" onclick="abrirModalInscripcion()">➕ Inscribir Estudiante</button>
+          </div>
 
-            <!-- CAMPO DE FOTO DE PERFIL -->
-            <div class="form-group">
-              <label>Adjuntar Foto de Perfil (Multer)</label>
-              <div class="photo-preview-container">
-                <input type="file" id="fotoInput" accept="image/*" onchange="previewPhoto(event)">
-                <img id="fotoPreview" class="photo-preview" alt="Vista previa">
-              </div>
-            </div>
-
-            <div style="margin-top: 15px; display: flex; gap: 10px;">
-              <button type="submit" class="btn btn-primary">Guardar Estudiante</button>
-              <button type="button" class="btn" onclick="resetForm()">Cancelar</button>
-            </div>
-          </form>
-        </div>
-
-        <!-- BÚSQUEDA INTERACTIVA COMBINADA (CÉDULA + AÑO + SECCIÓN) -->
-        <div class="panel-box">
-          <h3>Matrícula de Estudiantes</h3>
+          <!-- BARRA DE BÚSQUEDA INTERACTIVA CON FILTROS -->
           <div class="filter-bar">
             <input type="text" id="filter-cedula" placeholder="🔍 Buscar por Cédula, Nombre o Expediente..." oninput="fetchFilteredEstudiantes()">
             <select id="filter-ano" onchange="fetchFilteredEstudiantes()">
@@ -219,13 +477,23 @@
               <option value="C">Sección C</option>
               <option value="D">Sección D</option>
             </select>
+            <select id="filter-estado" onchange="fetchFilteredEstudiantes()">
+              <option value="Activo">Solo activos</option>
+              <option value="TODOS">Todos los estados</option>
+              <option value="Retirado">Retirados</option>
+              <option value="Graduado">Graduados</option>
+              <option value="Trasladado">Trasladados</option>
+            </select>
           </div>
 
+          <!-- TABLA DE RESULTADOS DINÁMICA -->
           <table>
             <thead>
-              <tr><th>Foto</th><th>Expediente</th><th>Cédula</th><th>Nombre y Apellido</th><th>Año / Sec</th><th>Condición</th><th>Acciones</th></tr>
+              <tr><th>Foto</th><th>Expediente</th><th>Cédula</th><th>Nombre y Apellido</th><th>Año / Sec</th><th>Condición</th><th>Estado</th><th>Acciones</th></tr>
             </thead>
-            <tbody id="students-table-body"></tbody>
+            <tbody id="students-table-body">
+              <tr><td colspan="8" style="text-align:center; color: var(--text-muted);">Cargando estudiantes...</td></tr>
+            </tbody>
           </table>
         </div>
       </section>
@@ -234,10 +502,8 @@
       <section id="view-notas" class="view-section">
         <div class="panel-box">
           <h3>Carga de Calificaciones</h3>
-          
-          <!-- FILTROS DE BÚSQUEDA INTERACTIVA -->
           <div class="filter-bar" style="margin-bottom: 20px;">
-            <input type="text" id="filter-notas-cedula" placeholder="🔍 Buscar estudiante por Cédula, Nombre o Expediente..." oninput="renderNotasEstudiantesList()">
+            <input type="text" id="filter-notas-cedula" placeholder="🔍 Buscar estudiante por Cédula o Nombre..." oninput="renderNotasEstudiantesList()">
             <select id="filter-notas-ano" onchange="renderNotasEstudiantesList()">
               <option value="TODOS">Todos los Años</option>
               <option value="1er Año">1er Año</option>
@@ -255,9 +521,8 @@
             </select>
           </div>
 
-          <!-- LISTA DE SELECCIÓN RÁPIDA -->
           <div class="form-group" style="max-width: 450px;">
-            <label>Seleccionar Estudiante Encontrado</label>
+            <label>Seleccionar Estudiante</label>
             <select id="select-student-notas" onchange="loadStudentGrades()"></select>
           </div>
 
@@ -271,15 +536,12 @@
         </div>
       </section>
 
-      <!-- 4. BOLETÍN ESCOLAR OFICIAL -->
-      
+      <!-- 4. BOLETÍN ESCOLAR -->
       <section id="view-boletin" class="view-section">
         <div class="panel-box no-print" style="margin-bottom: 20px;">
           <h3>Generación de Boletín Oficial</h3>
-          
-          <!-- FILTROS DE BÚSQUEDA INTERACTIVA -->
           <div class="filter-bar" style="margin-bottom: 15px;">
-            <input type="text" id="filter-boletin-cedula" placeholder="🔍 Buscar estudiante por Cédula, Nombre o Expediente..." oninput="renderBoletinEstudiantesList()">
+            <input type="text" id="filter-boletin-cedula" placeholder="🔍 Buscar estudiante..." oninput="renderBoletinEstudiantesList()">
             <select id="filter-boletin-ano" onchange="renderBoletinEstudiantesList()">
               <option value="TODOS">Todos los Años</option>
               <option value="1er Año">1er Año</option>
@@ -296,102 +558,580 @@
               <option value="D">Sección D</option>
             </select>
           </div>
-
           <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
             <select id="select-student-boletin" onchange="renderBoletin()" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); flex: 1; min-width: 300px;"></select>
-            <button class="btn btn-primary" onclick="window.print()">🖨️ Descargar / Imprimir Boletín (PDF)</button>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir / Descargar Boletín (PDF)</button>
           </div>
         </div>
-
-        <div class="boletin-paper" id="boletin-render">
-          <!-- Renderizado dinámico del Boletín -->
-        </div>
+        <div class="boletin-paper" id="boletin-render"></div>
       </section>
+
+  <!-- 4. Mantenimiento y Respaldo -->
+
+
+<section id="view-backup" class="view-section">
+  <div class="panel-box">
+    <h3>Mantenimiento de Datos y Respaldos</h3>
+    <p style="color: var(--text-muted); margin-bottom: 20px;">
+      Garantice la integridad y seguridad del expediente escolar realizando respaldos periódicos del sistema.
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+      
+      <!-- Opción 1: Respaldo Local -->
+      <div style="border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; background: #fafafa;">
+        <h4>Respaldo Local📥</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 10px 0;">
+          Descargue directamente el archivo físico <code>.sqlite</code> a su computador.
+        </p>
+        <button class="btn btn-primary" onclick="descargarRespaldoLocal()" style="width: 100%;">
+          Descargar copia (.sqlite)
+        </button>
+      </div>
+
+      <!-- Opción 2: Respaldo Completo -->
+      <div style="border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; background: #fafafa;">
+        <h4>Respaldo Completo📦</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 10px 0;">
+          Descargue la base de datos junto con todas las fotografías en un solo archivo <code>.tar.gz</code>.
+        </p>
+        <button class="btn btn-primary" onclick="descargarRespaldoCompleto()" style="width: 100%;">
+          Descargar respaldo completo
+        </button>
+      </div>
+
+      <!-- Opción 3: Respaldo Automático a Nube (Drive) -->
+      <div style="border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; background: #fafafa;">
+        <h4>Respaldo en la Nube (Google Drive)☁️ </h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 10px 0;">
+          Sube una copia con fecha de la base de datos al repositorio institucional de Google Drive.
+        </p>
+        <button class="btn btn-success" onclick="subirRespaldoDrive()" id="btnDrive" style="width: 100%;">
+          Subir a Google Drive
+        </button>
+      </div>
+
+      <!-- Opción 3: Restaurar Base de Datos -->
+      <div id="panel-restaurar" style="border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; background: #fff1f2;">
+        <h4 style="color: #be123c;">Restaurar Sistema⚠️</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 10px 0;">
+          Seleccione un respaldo <code>.sqlite</code>, <code>.db</code> o completo <code>.tar.gz</code>.
+          Se reemplazarán los datos actuales y, si el archivo es completo, también las fotografías.
+        </p>
+        <form id="formRestaurar" style="display: flex; flex-direction: column; gap: 10px;">
+          <input type="file" id="inputBackupFile" accept=".sqlite,.db,.tar.gz,.tgz" required style="font-size: 0.85rem;">
+          <button type="submit" class="btn btn-danger" style="width: 100%;">Restaurar Base de Datos</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 
     </div>
   </main>
 
+  <!-- MODAL / PANTALLA FLOTANTE PARA INSCRIPCIÓN / EDICIÓN -->
+  <div id="modalEstudiante" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 id="modal-title">Inscribir Nuevo Estudiante</h4>
+        <button class="btn-close" onclick="cerrarModalInscripcion()">&times;</button>
+      </div>
+      <form id="student-form">
+        <input type="hidden" id="student-id">
+        <div class="form-group">
+          <label>Nombre y Apellido</label>
+          <input type="text" id="nombreApellido" required>
+        </div>
+        <div class="form-group">
+          <label>Cédula de Identidad</label>
+          <input type="text" id="cedula" required>
+        </div>
+        <div class="form-group">
+          <label>Fecha de Nacimiento</label>
+          <input type="date" id="fechaNacimiento" required>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Año a Cursar</label>
+            <select id="anoCursar">
+              <option value="1er Año">1er Año</option>
+              <option value="2do Año">2do Año</option>
+              <option value="3er Año">3er Año</option>
+              <option value="4to Año">4to Año</option>
+              <option value="5to Año">5to Año</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Sección</label>
+            <select id="seccion">
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Condición</label>
+          <select id="condicion" required>
+                  <option value="Nuevo Ingreso">Nuevo Ingreso</option>
+                  <option value="Regular">Regular</option>
+                  <option value="Repitente">Repitente</option>
+                  <option value="Materia Pendiente">Materia Pendiente</option>
+
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Foto de Perfil</label>
+          <input type="file" id="fotoInput" accept="image/*" onchange="previewPhoto(event)">
+          <img id="fotoPreview" class="avatar" style="margin-top: 10px; display: none;" alt="Vista previa">
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn btn-success" style="flex: 1;">Guardar Estudiante</button>
+          <button type="button" class="btn" onclick="cerrarModalInscripcion()" style="background: #e2e8f0;">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE CAMBIO DE CONTRASEÑA -->
+  <div id="modalClave" class="modal">
+    <div class="modal-content" style="max-width: 460px;">
+      <div class="modal-header">
+        <h4>Cambiar contraseña</h4>
+        <button type="button" class="btn-close" onclick="cerrarModalCambioClave()">&times;</button>
+      </div>
+
+      <p id="clave-obligatoria-msg" style="display: none; background: #fef3c7; color: #92400e; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 15px;">
+        Por seguridad, debe cambiar la contraseña inicial antes de usar el sistema.
+      </p>
+
+      <form id="formClave">
+        <div class="form-group">
+          <label>Contraseña actual</label>
+          <input type="password" id="claveActual" required autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label>Nueva contraseña (mínimo 8 caracteres)</label>
+          <input type="password" id="claveNueva" required minlength="8" maxlength="72" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>Repetir nueva contraseña</label>
+          <input type="password" id="claveNueva2" required minlength="8" maxlength="72" autocomplete="new-password">
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn btn-success" style="flex: 1;">Guardar contraseña</button>
+          <button type="button" class="btn" id="btn-cancelar-clave" onclick="cerrarModalCambioClave()" style="background: #e2e8f0;">Cancelar</button>
+        </div>
+        <div style="text-align: center; margin-top: 12px;">
+          <button type="button" class="btn" onclick="logout()" style="background: transparent; color: var(--text-muted); font-size: 0.8rem; text-decoration: underline;">
+            Cerrar sesión
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
-    // Protección de ruta en el Frontend: Si no hay sesión activa, redirige a login.html
-    if (localStorage.getItem('auth_liceo') !== 'true') {
-      window.location.href = '/login.html';
-    }
-
-    // Función para cerrar sesión
-    function logout() {
-      localStorage.removeItem('auth_liceo');
-      window.location.href = '/login.html';
-    }
-
     let estudiantes = [];
     let currentStudentForNotes = null;
 
+    function usuarioActual() {
+      try {
+        return JSON.parse(localStorage.getItem('user_liceo') || '{}');
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function mostrarDatosUsuario() {
+      const user = usuarioActual();
+      const nombre = user.usuario || 'Usuario';
+      const rol = user.rol ? ` (${user.rol})` : '';
+      const footer = document.getElementById('usuario-actual');
+      if (footer) footer.innerText = nombre + rol;
+      const bienvenida = document.getElementById('welcome-user');
+      if (bienvenida) bienvenida.innerText = `Bienvenido, ${nombre}`;
+    }
+
+    function esAdmin() {
+      return usuarioActual().rol === 'admin';
+    }
+
+    function puedeGestionarEstudiantes() {
+      const rol = usuarioActual().rol;
+      return rol === 'admin' || rol === 'control_estudios';
+    }
+
+    function puedeRespaldar() {
+      const rol = usuarioActual().rol;
+      return rol === 'admin' || rol === 'control_estudios';
+    }
+
+    // Oculta acciones que el rol actual no puede ejecutar en el backend.
+    function aplicarPermisosUI() {
+      const navBackup = document.getElementById('nav-backup');
+      if (navBackup) navBackup.style.display = puedeRespaldar() ? 'flex' : 'none';
+
+      const btnInscribir = document.getElementById('btn-inscribir');
+      if (btnInscribir) btnInscribir.style.display = puedeGestionarEstudiantes() ? '' : 'none';
+
+      const panelRestaurar = document.getElementById('panel-restaurar');
+      if (panelRestaurar) panelRestaurar.style.display = esAdmin() ? '' : 'none';
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-      fetchFilteredEstudiantes();
+      mostrarDatosUsuario();
+      aplicarPermisosUI();
+
+      // Si la contraseña es inicial o débil, el backend solo entrega un token
+      // temporal para cambiarla. No se deben cargar datos hasta completar el cambio.
+      if (localStorage.getItem('debe_cambiar_clave') === '1') {
+        mostrarModalCambioClave(true);
+        return;
+      }
+
+      cargarTodosLosDatos();
+      updateDashboard();
     });
 
-    function switchTab(tabId, evt) {
+    async function cargarTodosLosDatos() {
+      try {
+        const res = await authFetch('/api/estudiantes?estado=Activo');
+        const data = await res.json();
+        if (data.success) {
+          estudiantes = data.data || [];
+        }
+      } catch (e) {
+        console.error('Error al sincronizar estudiantes:', e);
+      }
+    }
+
+    async function switchTab(tabId, evt) {
+      if (tabId === 'backup' && !puedeRespaldar()) {
+        alert('No tiene permisos para acceder a los respaldos del sistema.');
+        return;
+      }
+
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       
       if (evt && evt.target) evt.target.classList.add('active');
       document.getElementById(`view-${tabId}`).classList.add('active');
       
-      if (tabId === 'dashboard') updateDashboard();
-      if (tabId === 'notas') renderNotasEstudiantesList();
-      if (tabId === 'boletin') renderBoletinEstudiantesList();
+      if (tabId === 'dashboard') {
+        updateDashboard();
+      } else if (tabId === 'estudiantes') {
+        await fetchFilteredEstudiantes();
+      } else if (tabId === 'notas') {
+        await cargarTodosLosDatos();
+        renderNotasEstudiantesList();
+      } else if (tabId === 'boletin') {
+        await cargarTodosLosDatos();
+        renderBoletinEstudiantesList();
+      }
     }
 
-    // Búsqueda general para la tabla de Estudiantes (CRUD)
+    // ── DASHBOARD — Chart.js dinámico ──────────────────────────────────────────
+    let chartCondicion = null, chartAnio = null, chartMaterias = null, chartLapsos = null;
+
+    function animateCounter(id, target, decimals) {
+      decimals = decimals || 0;
+      const el = document.getElementById(id);
+      if (!el) return;
+      const start = parseFloat(el.innerText) || 0;
+      const duration = 800;
+      const startTime = performance.now();
+      function step(now) {
+        const p = Math.min((now - startTime) / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3);
+        const val = start + (target - start) * ease;
+        el.innerText = decimals > 0 ? val.toFixed(decimals) : Math.round(val);
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function destroyChart(ref) { if (ref) { try { ref.destroy(); } catch(e){} } return null; }
+
+    async function updateDashboard() {
+      try {
+        const res = await authFetch('/api/estudiantes?estado=Activo');
+        const data = await res.json();
+        if (!data.success) return;
+
+        estudiantes = data.data || [];
+
+        // ── KPI counters ──────────────────────────────────────────────────────
+        const total = estudiantes.length;
+        const nuevos = estudiantes.filter(s => s.condicion === 'Nuevo Ingreso').length;
+
+        let sumNotas = 0, totalNotas = 0, materiasReprobadas = 0;
+        estudiantes.forEach(s => {
+          (s.notas || []).forEach(n => {
+            // Solo las materias con los tres lapsos cargados tienen definitiva.
+            if (n.definitiva !== null && n.definitiva !== undefined) {
+              sumNotas += Number(n.definitiva);
+              totalNotas++;
+              if (Number(n.definitiva) < 10) materiasReprobadas++;
+            }
+          });
+        });
+        const prom = totalNotas > 0 ? sumNotas / totalNotas : 0;
+
+        animateCounter('stat-total', total, 0);
+        animateCounter('stat-nuevos', nuevos, 0);
+        animateCounter('stat-pendientes', materiasReprobadas, 0);
+        animateCounter('stat-promedio', prom, 1);
+
+        const getEl = id => document.getElementById(id);
+        if (getEl('kpi-sub-total'))      getEl('kpi-sub-total').innerText = 'Expedientes activos';
+        if (getEl('kpi-sub-nuevos'))     getEl('kpi-sub-nuevos').innerText = (total > 0 ? Math.round(nuevos / total * 100) : 0) + '% del total';
+        if (getEl('kpi-sub-pendientes')) getEl('kpi-sub-pendientes').innerText = 'Con definitiva menor a 10';
+        if (getEl('kpi-sub-promedio'))   getEl('kpi-sub-promedio').innerText = totalNotas > 0
+          ? `${totalNotas} materias completas evaluadas`
+          : 'Sin calificaciones completas';
+
+        // ── Chart 1: Doughnut — Condición ─────────────────────────────────────
+        const condiciones = ['Nuevo Ingreso', 'Regular', 'Repitente', 'Materia Pendiente'];
+        const condCounts = condiciones.map(c => estudiantes.filter(s => s.condicion === c).length);
+        chartCondicion = destroyChart(chartCondicion);
+        chartCondicion = new Chart(document.getElementById('chartCondicion'), {
+          type: 'doughnut',
+          data: {
+            labels: condiciones,
+            datasets: [{
+              data: condCounts,
+              backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#f43f5e'],
+              borderWidth: 2, borderColor: '#fff',
+              hoverOffset: 10
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: true,
+            cutout: '68%',
+            animation: { animateRotate: true, duration: 900 },
+            plugins: {
+              legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } },
+              tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed + ' estudiante(s)' } }
+            }
+          }
+        });
+
+        // ── Chart 2: Bar — Matrícula por Año ──────────────────────────────────
+        const anios = ['1er Año','2do Año','3er Año','4to Año','5to Año'];
+        const anioCounts = anios.map(a => estudiantes.filter(s => s.anoCursar === a).length);
+        chartAnio = destroyChart(chartAnio);
+        chartAnio = new Chart(document.getElementById('chartAnio'), {
+          type: 'bar',
+          data: {
+            labels: anios,
+            datasets: [{
+              label: 'Estudiantes',
+              data: anioCounts,
+              backgroundColor: ['#2563eb','#3b82f6','#60a5fa','#93c5fd','#1d4ed8'],
+              borderRadius: 8, borderSkipped: false
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: true,
+            animation: { duration: 900, easing: 'easeOutQuart' },
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+              y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: '#f1f5f9' } }
+            }
+          }
+        });
+
+        // ── Chart 3: Radar — Promedio por Materia ─────────────────────────────
+        const materias      = ['Castellano','Matemáticas','Inglés','Ed. Física','Biología','Física','Química','Historia','Geografía'];
+        const materiasKeys  = ['Castellano','Matemáticas','Inglés y Otras Lenguas','Educación Física','Biología / Ciencias Naturales','Física','Química','Historia de Venezuela y Ciudadanía','Geografía / Arte y Cultura'];
+        const promediosMaterias = materiasKeys.map(mat => {
+          let sum = 0, count = 0;
+          estudiantes.forEach(s => {
+            const nota = (s.notas || []).find(n => n.nombre === mat || n.nombre_materia === mat);
+            if (nota && nota.definitiva !== null && nota.definitiva !== undefined) {
+              sum += Number(nota.definitiva);
+              count++;
+            }
+          });
+          return count > 0 ? parseFloat((sum / count).toFixed(1)) : 0;
+        });
+        chartMaterias = destroyChart(chartMaterias);
+        chartMaterias = new Chart(document.getElementById('chartMaterias'), {
+          type: 'radar',
+          data: {
+            labels: materias,
+            datasets: [{
+              label: 'Promedio',
+              data: promediosMaterias,
+              fill: true,
+              backgroundColor: 'rgba(37,99,235,0.15)',
+              borderColor: '#2563eb',
+              borderWidth: 2,
+              pointBackgroundColor: '#2563eb',
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: true,
+            animation: { duration: 1000 },
+            plugins: { legend: { display: false } },
+            scales: {
+              r: {
+                beginAtZero: true, min: 0, max: 20,
+                ticks: { stepSize: 5, font: { size: 9 }, backdropColor: 'transparent' },
+                grid: { color: '#e2e8f0' },
+                pointLabels: { font: { size: 9 } }
+              }
+            }
+          }
+        });
+
+        // ── Chart 4: Line — Evolución por Lapso ───────────────────────────────
+        const promedioLapsos = [1, 2, 3].map(lapso => {
+          let sum = 0, count = 0;
+          estudiantes.forEach(s => {
+            (s.notas || []).forEach(n => {
+              const valor = n['lapso' + lapso];
+              if (valor !== null && valor !== undefined && valor !== '') {
+                sum += Number(valor);
+                count++;
+              }
+            });
+          });
+          return count > 0 ? parseFloat((sum / count).toFixed(1)) : 0;
+        });
+        chartLapsos = destroyChart(chartLapsos);
+        chartLapsos = new Chart(document.getElementById('chartLapsos'), {
+          type: 'line',
+          data: {
+            labels: ['Lapso 1', 'Lapso 2', 'Lapso 3'],
+            datasets: [{
+              label: 'Promedio del Plantel',
+              data: promedioLapsos,
+              fill: true,
+              backgroundColor: 'rgba(16,185,129,0.1)',
+              borderColor: '#10b981',
+              borderWidth: 3,
+              tension: 0.4,
+              pointBackgroundColor: '#10b981',
+              pointRadius: 6, pointHoverRadius: 9,
+              pointBorderColor: '#fff', pointBorderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: true,
+            animation: { duration: 900, easing: 'easeInOutCubic' },
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: ctx => ' Promedio: ' + ctx.parsed.y + ' / 20 pts' } }
+            },
+            scales: {
+              x: { grid: { display: false } },
+              y: { beginAtZero: true, max: 20, grid: { color: '#f1f5f9' }, ticks: { stepSize: 5 } }
+            }
+          }
+        });
+
+      } catch (e) { console.error('Error en Dashboard:', e); }
+    }
+
+    // MODAL FLOTANTE
+    function abrirModalInscripcion() {
+      if (!puedeGestionarEstudiantes()) {
+        alert('No tiene permisos para inscribir o editar estudiantes.');
+        return;
+      }
+
+      document.getElementById('student-form').reset();
+      document.getElementById('student-id').value = '';
+      document.getElementById('modal-title').innerText = 'Inscribir Nuevo Estudiante';
+      document.getElementById('fotoPreview').style.display = 'none';
+      document.getElementById('modalEstudiante').style.display = 'flex';
+    }
+
+    function cerrarModalInscripcion() {
+      document.getElementById('modalEstudiante').style.display = 'none';
+    }
+
+    // BÚSQUEDA INTERACTIVA PESTAÑA ESTUDIANTES (CRUD)
     async function fetchFilteredEstudiantes() {
-      const busqueda = document.getElementById('filter-cedula').value;
+      const busqueda = document.getElementById('filter-cedula').value.trim();
       const ano = document.getElementById('filter-ano').value;
       const seccion = document.getElementById('filter-seccion').value;
+      const estado = document.getElementById('filter-estado').value;
 
-      const params = new URLSearchParams({ busqueda, ano, seccion });
+      const tbody = document.getElementById('students-table-body');
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">Cargando estudiantes...</td></tr>`;
+
+      const params = new URLSearchParams({ busqueda, ano, seccion, estado });
 
       try {
-        const res = await fetch(`/api/estudiantes?${params.toString()}`);
+        const res = await authFetch(`/api/estudiantes?${params.toString()}`);
         const data = await res.json();
+
         if (data.success) {
-          estudiantes = data.data;
+          estudiantes = data.data || [];
           renderTable();
-          updateDashboard();
-          // Si nos encontramos en notas o boletín, actualizamos también sus listas en tiempo real
-          if (document.getElementById('view-notas').classList.contains('active')) renderNotasEstudiantesList();
-          if (document.getElementById('view-boletin').classList.contains('active')) renderBoletinEstudiantesList();
+        } else {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #be123c;">${escapeHtml(data.message || 'No se pudo consultar la lista de estudiantes.')}</td></tr>`;
         }
-      } catch (e) { console.error('Error al obtener estudiantes:', e); }
+      } catch (e) {
+        console.error('Error al obtener estudiantes:', e);
+      }
     }
 
     function renderTable() {
       const tbody = document.getElementById('students-table-body');
       if (estudiantes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">No se encontraron estudiantes con los criterios especificados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No se encontraron estudiantes con los criterios especificados.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = estudiantes.map(st => `
+      const clasesEstado = {
+        Activo: 'badge-activo',
+        Retirado: 'badge-retirado',
+        Graduado: 'badge-graduado',
+        Trasladado: 'badge-trasladado'
+      };
+      const puedeEditar = puedeGestionarEstudiantes();
+
+      tbody.innerHTML = estudiantes.map(st => {
+        const estado = st.estado || 'Activo';
+        const claseEstado = clasesEstado[estado] || '';
+
+        return `
         <tr>
           <td>
             ${st.fotoUrl 
-              ? `<img src="${st.fotoUrl}" class="avatar">` 
-              : `<div class="avatar" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:white; background:#2563eb;">${st.nombreApellido.substring(0,2).toUpperCase()}</div>`}
+              ? `<img src="${encodeURI(st.fotoUrl)}" class="avatar" alt="Avatar">` 
+              : `<div class="avatar" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:white; background:#2563eb;">${escapeHtml((st.nombreApellido || 'E').substring(0,2).toUpperCase())}</div>`}
           </td>
-          <td><b>${st.codigoExpediente}</b></td>
-          <td>${st.cedula}</td>
-          <td>${st.nombreApellido}</td>
-          <td>${st.anoCursar} "${st.seccion}"</td>
-          <td><span style="padding: 3px 8px; border-radius: 4px; background: #e2e8f0; font-size: 0.8rem; font-weight: 600;">${st.condicion}</span></td>
+          <td><b>${escapeHtml(st.codigoExpediente || 'S/N')}</b></td>
+          <td>${escapeHtml(st.cedula)}</td>
+          <td>${escapeHtml(st.nombreApellido)}</td>
+          <td>${escapeHtml(st.anoCursar)} "${escapeHtml(st.seccion)}"</td>
+          <td><span style="padding: 3px 8px; border-radius: 4px; background: #e2e8f0; font-size: 0.8rem; font-weight: 600;">${escapeHtml(st.condicion)}</span></td>
+          <td><span class="badge-estado ${claseEstado}">${escapeHtml(estado)}</span></td>
           <td>
-            <button class="btn btn-warning" onclick="editStudent('${st._id}')" title="Editar">✏️</button>
-            <button class="btn btn-danger" onclick="deleteStudent('${st._id}')" title="Eliminar">🗑️</button>
+            ${puedeEditar ? `
+              <button class="btn btn-warning" onclick="editStudent('${escapeHtml(st._id)}')" title="Editar">✏️</button>
+              ${estado === 'Activo'
+                ? `<button class="btn btn-danger" onclick="cambiarEstadoEstudiante('${escapeHtml(st._id)}', 'Retirado')" title="Archivar">🗄️</button>`
+                : `<button class="btn btn-success" onclick="cambiarEstadoEstudiante('${escapeHtml(st._id)}', 'Activo')" title="Reactivar">♻️</button>`}
+            ` : '<span style="color: var(--text-muted);">—</span>'}
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
     }
 
-    // Vista previa de la foto
     function previewPhoto(event) {
       const file = event.target.files[0];
       const preview = document.getElementById('fotoPreview');
@@ -407,9 +1147,14 @@
       }
     }
 
-    // Guardar / Editar Estudiante
     document.getElementById('student-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      if (!puedeGestionarEstudiantes()) {
+        alert('No tiene permisos para inscribir o editar estudiantes.');
+        return;
+      }
+
       const id = document.getElementById('student-id').value;
       const formData = new FormData();
       
@@ -426,13 +1171,19 @@
       const url = id ? `/api/estudiantes/${id}` : '/api/estudiantes';
       const method = id ? 'PUT' : 'POST';
 
-      const res = await fetch(url, { method, body: formData });
-      const result = await res.json();
-      if (result.success) {
-        resetForm();
-        fetchFilteredEstudiantes();
-      } else {
-        alert(result.message || 'Error al procesar la solicitud');
+      try {
+        const res = await authFetch(url, { method, body: formData });
+        const result = await res.json();
+        if (result.success) {
+          cerrarModalInscripcion();
+          fetchFilteredEstudiantes();
+          updateDashboard();
+          alert(id ? 'Estudiante actualizado correctamente' : '¡Estudiante inscrito con éxito!');
+        } else {
+          alert(result.message || 'Error al procesar la solicitud');
+        }
+      } catch (err) {
+        console.error('Error al guardar estudiante:', err);
       }
     });
 
@@ -443,11 +1194,11 @@
       document.getElementById('student-id').value = st._id;
       document.getElementById('nombreApellido').value = st.nombreApellido;
       document.getElementById('cedula').value = st.cedula;
-      document.getElementById('fechaNacimiento').value = st.fechaNacimiento.split('T')[0];
+      document.getElementById('fechaNacimiento').value = st.fechaNacimiento ? st.fechaNacimiento.split('T')[0] : '';
       document.getElementById('anoCursar').value = st.anoCursar;
       document.getElementById('seccion').value = st.seccion;
       document.getElementById('condicion').value = st.condicion;
-      document.getElementById('form-title').innerText = 'Editar Datos de Estudiante';
+      document.getElementById('modal-title').innerText = 'Editar Datos de Estudiante';
 
       const preview = document.getElementById('fotoPreview');
       if (st.fotoUrl) {
@@ -456,34 +1207,51 @@
       } else {
         preview.style.display = 'none';
       }
+
+      document.getElementById('modalEstudiante').style.display = 'flex';
     }
 
-    async function deleteStudent(id) {
-      if (confirm('¿Está seguro de eliminar este expediente permanentemente?')) {
-        await fetch(`/api/estudiantes/${id}`, { method: 'DELETE' });
-        fetchFilteredEstudiantes();
+    async function cambiarEstadoEstudiante(id, estado) {
+      const esArchivar = estado === 'Retirado';
+      const mensaje = esArchivar
+        ? '¿Archivar este expediente? Sus datos y calificaciones se conservarán y podrá reactivarlo después.'
+        : '¿Reactivar este expediente como estudiante activo?';
+
+      if (!confirm(mensaje)) return;
+
+      try {
+        const res = await authFetch(`/api/estudiantes/${id}/estado`, {
+          method: 'PATCH',
+          body: JSON.stringify({ estado })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          await fetchFilteredEstudiantes();
+          updateDashboard();
+        } else {
+          alert(data.message || 'No se pudo cambiar el estado del estudiante');
+        }
+      } catch (err) {
+        console.error('Error al cambiar estado del estudiante:', err);
       }
     }
 
-    function resetForm() {
-      document.getElementById('student-id').value = '';
-      document.getElementById('student-form').reset();
-      document.getElementById('fotoPreview').style.display = 'none';
-      document.getElementById('form-title').innerText = 'Inscribir Nuevo Estudiante';
+    async function deleteStudent(id) {
+      // Compatibilidad: el borrado físico ya no existe; se archiva el expediente.
+      await cambiarEstadoEstudiante(id, 'Retirado');
     }
 
-    // ==========================================
-    // BÚSQUEDA INTERACTIVA PARA CARGA DE NOTAS
-    // ==========================================
+    // BÚSQUEDA INTERACTIVA - NOTAS
     function renderNotasEstudiantesList() {
-      const busqueda = document.getElementById('filter-notas-cedula').value.toLowerCase();
+      const busqueda = (document.getElementById('filter-notas-cedula').value || '').toLowerCase().trim();
       const ano = document.getElementById('filter-notas-ano').value;
       const seccion = document.getElementById('filter-notas-seccion').value;
 
       const filtrados = estudiantes.filter(st => {
-        const matchText = st.cedula.toLowerCase().includes(busqueda) || 
-                          st.nombreApellido.toLowerCase().includes(busqueda) || 
-                          st.codigoExpediente.toLowerCase().includes(busqueda);
+        const matchText = (st.cedula || '').toLowerCase().includes(busqueda) || 
+                          (st.nombreApellido || '').toLowerCase().includes(busqueda) || 
+                          (st.codigoExpediente || '').toLowerCase().includes(busqueda);
         const matchAno = ano === 'TODOS' || st.anoCursar === ano;
         const matchSeccion = seccion === 'TODAS' || st.seccion === seccion;
         return matchText && matchAno && matchSeccion;
@@ -497,8 +1265,25 @@
         return;
       }
 
-      select.innerHTML = filtrados.map(st => `<option value="${st._id}">${st.nombreApellido} (C.I: ${st.cedula}) - ${st.anoCursar} "${st.seccion}"</option>`).join('');
+      select.innerHTML = filtrados.map(st => `<option value="${escapeHtml(st._id)}">${escapeHtml(st.nombreApellido)} (C.I: ${escapeHtml(st.cedula)}) - ${escapeHtml(st.anoCursar)} "${escapeHtml(st.seccion)}"</option>`).join('');
       loadStudentGrades();
+    }
+
+    function notaParaInput(valor) {
+      return (valor === null || valor === undefined || valor === '') ? '' : Number(valor);
+    }
+
+    function calcularDefinitivaNota(nota) {
+      const valores = [nota.lapso1, nota.lapso2, nota.lapso3];
+
+      if (valores.some(v => v === null || v === undefined || v === '')) {
+        return null;
+      }
+
+      const numeros = valores.map(Number);
+      if (numeros.some(v => !Number.isFinite(v))) return null;
+
+      return Math.round((numeros.reduce((total, v) => total + v, 0) / 3) * 100) / 100;
     }
 
     function loadStudentGrades() {
@@ -506,54 +1291,86 @@
       currentStudentForNotes = estudiantes.find(s => String(s._id) === String(id));
       const body = document.getElementById('grades-body');
 
-      if (!currentStudentForNotes) {
-        body.innerHTML = '';
+      if (!currentStudentForNotes || !currentStudentForNotes.notas) {
+        body.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">El estudiante seleccionado no posee materias asignadas.</td></tr>`;
         return;
       }
 
       body.innerHTML = currentStudentForNotes.notas.map((n, index) => {
-        const def = ((n.lapso1 + n.lapso2 + n.lapso3) / 3).toFixed(1);
+        const def = calcularDefinitivaNota(n);
+        const defTexto = def === null ? '—' : `${def.toFixed(1)} pts`;
+        const color = def === null ? 'var(--text-muted)' : (def < 10 ? 'red' : 'green');
+
         return `
           <tr>
-            <td><b>${n.nombre}</b></td>
-            <td><input type="number" class="nota-input" value="${n.lapso1}" min="0" max="20" onchange="updateLocalNota(${index}, 1, this.value)"></td>
-            <td><input type="number" class="nota-input" value="${n.lapso2}" min="0" max="20" onchange="updateLocalNota(${index}, 2, this.value)"></td>
-            <td><input type="number" class="nota-input" value="${n.lapso3}" min="0" max="20" onchange="updateLocalNota(${index}, 3, this.value)"></td>
-            <td><b style="color: ${def < 10 ? 'red' : 'green'}">${def} pts</b></td>
+            <td><b>${escapeHtml(n.nombre)}</b></td>
+            <td><input type="number" class="nota-input" value="${notaParaInput(n.lapso1)}" min="0" max="20" step="0.5" placeholder="—" onchange="updateLocalNota(${index}, 1, this.value)"></td>
+            <td><input type="number" class="nota-input" value="${notaParaInput(n.lapso2)}" min="0" max="20" step="0.5" placeholder="—" onchange="updateLocalNota(${index}, 2, this.value)"></td>
+            <td><input type="number" class="nota-input" value="${notaParaInput(n.lapso3)}" min="0" max="20" step="0.5" placeholder="—" onchange="updateLocalNota(${index}, 3, this.value)"></td>
+            <td><b style="color: ${color}">${defTexto}</b></td>
           </tr>
         `;
       }).join('');
     }
 
     function updateLocalNota(index, lapso, val) {
-      const num = Math.min(20, Math.max(0, parseFloat(val) || 0));
-      currentStudentForNotes.notas[index][`lapso${lapso}`] = num;
+      if (!currentStudentForNotes || !currentStudentForNotes.notas[index]) return;
+
+      const texto = String(val ?? '').trim();
+      let numero = null;
+
+      if (texto !== '') {
+        numero = parseFloat(texto);
+        if (!Number.isFinite(numero)) return;
+        numero = Math.min(20, Math.max(0, numero));
+      }
+
+      currentStudentForNotes.notas[index][`lapso${lapso}`] = numero;
       loadStudentGrades();
     }
 
     async function saveGrades() {
       if (!currentStudentForNotes) return;
-      await fetch(`/api/estudiantes/${currentStudentForNotes._id}/notas`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notas: currentStudentForNotes.notas })
-      });
-      alert('Calificaciones guardadas exitosamente');
-      fetchFilteredEstudiantes();
+
+      // Enviar solo los campos que entiende el backend, sin metadatos calculados.
+      const notas = (currentStudentForNotes.notas || []).map(n => ({
+        nombre: n.nombre || n.nombre_materia,
+        lapso1: n.lapso1,
+        lapso2: n.lapso2,
+        lapso3: n.lapso3
+      }));
+
+      try {
+        const res = await authFetch(`/api/estudiantes/${currentStudentForNotes._id}/notas`, {
+          method: 'PUT',
+          body: JSON.stringify({ notas })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          currentStudentForNotes.notas = data.notas || [];
+          loadStudentGrades();
+          await cargarTodosLosDatos();
+          updateDashboard();
+          alert('Calificaciones guardadas exitosamente');
+        } else {
+          alert(data.message || 'Error al guardar calificaciones');
+        }
+      } catch (e) {
+        console.error('Error guardando notas:', e);
+      }
     }
 
-    // ==========================================
-    // BÚSQUEDA INTERACTIVA PARA BOLETÍN ESCOLAR
-    // ==========================================
+    // BÚSQUEDA INTERACTIVA - BOLETÍN ESCOLAR
     function renderBoletinEstudiantesList() {
-      const busqueda = document.getElementById('filter-boletin-cedula').value.toLowerCase();
+      const busqueda = (document.getElementById('filter-boletin-cedula').value || '').toLowerCase().trim();
       const ano = document.getElementById('filter-boletin-ano').value;
       const seccion = document.getElementById('filter-boletin-seccion').value;
 
       const filtrados = estudiantes.filter(st => {
-        const matchText = st.cedula.toLowerCase().includes(busqueda) || 
-                          st.nombreApellido.toLowerCase().includes(busqueda) || 
-                          st.codigoExpediente.toLowerCase().includes(busqueda);
+        const matchText = (st.cedula || '').toLowerCase().includes(busqueda) || 
+                          (st.nombreApellido || '').toLowerCase().includes(busqueda) || 
+                          (st.codigoExpediente || '').toLowerCase().includes(busqueda);
         const matchAno = ano === 'TODOS' || st.anoCursar === ano;
         const matchSeccion = seccion === 'TODAS' || st.seccion === seccion;
         return matchText && matchAno && matchSeccion;
@@ -566,86 +1383,157 @@
         return;
       }
 
-      select.innerHTML = filtrados.map(st => `<option value="${st._id}">${st.nombreApellido} (C.I: ${st.cedula}) - ${st.anoCursar} "${st.seccion}"</option>`).join('');
+      select.innerHTML = filtrados.map(st => `<option value="${escapeHtml(st._id)}">${escapeHtml(st.nombreApellido)} (C.I: ${escapeHtml(st.cedula)}) - ${escapeHtml(st.anoCursar)} "${escapeHtml(st.seccion)}"</option>`).join('');
       renderBoletin();
     }
 
-    // RENDERIZADOR DEL BOLETÍN
     function renderBoletin() {
       const id = document.getElementById('select-student-boletin').value;
       const st = estudiantes.find(s => String(s._id) === String(id));
       const container = document.getElementById('boletin-render');
 
       if (!st) {
-        container.innerHTML = `<p style="text-align:center; color: var(--text-muted);">Seleccione un estudiante para generar su boletín.</p>`;
+        container.innerHTML = `<p style="text-align:center; color: var(--text-muted);">Seleccione un estudiante válido.</p>`;
         return;
       }
 
-      let sumaDefinitivas = 0;
-      const rowsHtml = st.notas.map(n => {
-        const def = ((n.lapso1 + n.lapso2 + n.lapso3) / 3);
-        sumaDefinitivas += def;
-        return `
-          <tr>
-            <td>${n.nombre}</td>
-            <td style="text-align:center">${n.lapso1}</td>
-            <td style="text-align:center">${n.lapso2}</td>
-            <td style="text-align:center">${n.lapso3}</td>
-            <td style="text-align:center"><b>${def.toFixed(1)}</b></td>
-          </tr>
-        `;
-      }).join('');
+      let notasHtml = '';
+      const celdaNota = (valor) => (valor === null || valor === undefined || valor === '')
+        ? '—'
+        : Number(valor);
 
-      const promedioGeneral = (sumaDefinitivas / (st.notas.length || 1)).toFixed(2);
+      if (st.notas && st.notas.length > 0) {
+        notasHtml = st.notas.map(n => {
+          const def = calcularDefinitivaNota(n);
+          const defTexto = def === null ? '—' : def.toFixed(1);
+          const color = def === null ? 'var(--text-muted)' : (def < 10 ? 'red' : 'black');
+
+          return `
+            <tr>
+              <td>${escapeHtml(n.nombre)}</td>
+              <td style="text-align:center;">${celdaNota(n.lapso1)}</td>
+              <td style="text-align:center;">${celdaNota(n.lapso2)}</td>
+              <td style="text-align:center;">${celdaNota(n.lapso3)}</td>
+              <td style="text-align:center; font-weight:bold; color:${color};">${defTexto}</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        notasHtml = `<tr><td colspan="5" style="text-align:center;">Sin registro de materias</td></tr>`;
+      }
 
       container.innerHTML = `
-        <div class="boletin-header">
+        <div style="text-align: center; border-bottom: 2px solid var(--text-dark); padding-bottom: 10px; margin-bottom: 20px;">
           <h2>REPÚBLICA BOLIVARIANA DE VENEZUELA</h2>
-          <p>MINISTERIO DEL PODER POPULAR PARA LA EDUCACIÓN</p>
-          <p>LICEO BOLIVARIANO - CONTROL DE ESTUDIO</p>
-          <h3 style="margin-top: 10px;">BOLETÍN INFORMATIVO DE CALIFICACIONES</h3>
+          <h3>LICEO "ELISA PULGAR DE RAMÍREZ"</h3>
+          <p>BOLETÍN INFORMATIVO DE CALIFICACIONES</p>
         </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; font-size: 0.9rem;">
           <div>
-            <p><b>Estudiante:</b> ${st.nombreApellido}</p>
-            <p><b>Cédula:</b> ${st.cedula}</p>
-            <p><b>Código de Expediente:</b> ${st.codigoExpediente}</p>
+            <p><b>Estudiante:</b> ${escapeHtml(st.nombreApellido)}</p>
+            <p><b>Cédula:</b> ${escapeHtml(st.cedula)}</p>
           </div>
           <div>
-            <p><b>Año y Sección:</b> ${st.anoCursar} "${st.seccion}"</p>
-            <p><b>Condición:</b> ${st.condicion}</p>
-            <p><b>Promedio General:</b> <b style="font-size: 1.1rem; color: ${promedioGeneral < 10 ? 'red' : 'green'}">${promedioGeneral} pts</b></p>
+            <p><b>Año y Sección:</b> ${escapeHtml(st.anoCursar)} "${escapeHtml(st.seccion)}"</p>
+            <p><b>Expediente:</b> ${escapeHtml(st.codigoExpediente || 'S/N')}</p>
+            <p><b>Estado:</b> ${escapeHtml(st.estado || 'Activo')}</p>
           </div>
-          ${st.fotoUrl ? `<img src="${st.fotoUrl}" style="width: 70px; height: 70px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border-color);">` : ''}
         </div>
-
         <table>
           <thead>
             <tr><th>Asignatura</th><th>1er Lapso</th><th>2do Lapso</th><th>3er Lapso</th><th>Definitiva</th></tr>
           </thead>
-          <tbody>${rowsHtml}</tbody>
+          <tbody>
+            ${notasHtml}
+          </tbody>
         </table>
-
-        <div class="signatures">
-          <div class="sig-line">Director(a) del Liceo</div>
-          <div class="sig-line">Sello de la Institución</div>
-          <div class="sig-line">Control de Estudio</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 50px; text-align: center;">
+          <div style="width: 200px; border-top: 1px solid var(--text-dark); font-size: 0.8rem; padding-top: 5px;">Profesor Guía</div>
+          <div style="width: 200px; border-top: 1px solid var(--text-dark); font-size: 0.8rem; padding-top: 5px;">Dirección / Control de Estudio</div>
         </div>
       `;
     }
 
-    function updateDashboard() {
-      document.getElementById('stat-total').innerText = estudiantes.length;
-      document.getElementById('stat-nuevos').innerText = estudiantes.filter(s => s.condicion === 'Nuevo Ingreso').length;
-      document.getElementById('stat-pendientes').innerText = estudiantes.filter(s => s.condicion === 'Materia Pendiente').length;
-      
-      let totalProm = 0;
-      estudiantes.forEach(s => {
-        const sumSt = s.notas.reduce((acc, n) => acc + ((n.lapso1 + n.lapso2 + n.lapso3) / 3), 0);
-        totalProm += (sumSt / (s.notas.length || 1));
-      });
-      document.getElementById('stat-promedio').innerText = estudiantes.length ? (totalProm / estudiantes.length).toFixed(2) : '0.0';
+    // ── CAMBIO DE CONTRASEÑA ──────────────────────────────────────────────────
+    function mostrarModalCambioClave(obligatorio = false) {
+      const modal = document.getElementById('modalClave');
+      if (!modal) return;
+
+      document.getElementById('formClave').reset();
+      document.getElementById('clave-obligatoria-msg').style.display = obligatorio ? 'block' : 'none';
+      document.getElementById('btn-cancelar-clave').style.display = obligatorio ? 'none' : 'inline-block';
+      modal.dataset.obligatorio = obligatorio ? '1' : '0';
+      modal.style.display = 'flex';
     }
-  </script></body>
+
+    function cerrarModalCambioClave() {
+      const modal = document.getElementById('modalClave');
+      if (!modal) return;
+
+      if (modal.dataset.obligatorio === '1') {
+        alert('Debe cambiar la contraseña antes de continuar usando el sistema.');
+        return;
+      }
+
+      modal.style.display = 'none';
+    }
+
+    document.getElementById('formClave').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const actual = document.getElementById('claveActual').value.trim();
+      const nueva = document.getElementById('claveNueva').value.trim();
+      const repetir = document.getElementById('claveNueva2').value.trim();
+
+      if (nueva.length < 8) {
+        alert('La nueva contraseña debe tener al menos 8 caracteres.');
+        return;
+      }
+
+      if (nueva !== repetir) {
+        alert('La nueva contraseña y su confirmación no coinciden.');
+        return;
+      }
+
+      if (nueva === actual) {
+        alert('La nueva contraseña debe ser diferente a la actual.');
+        return;
+      }
+
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerText = 'Guardando...';
+
+      try {
+        const res = await authFetch('/api/auth/password', {
+          method: 'PUT',
+          body: JSON.stringify({ claveActual: actual, claveNueva: nueva })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          localStorage.setItem('token_liceo', data.token);
+          localStorage.setItem('user_liceo', JSON.stringify(data.user));
+          localStorage.setItem('debe_cambiar_clave', '0');
+
+          const modal = document.getElementById('modalClave');
+          modal.dataset.obligatorio = '0';
+          modal.style.display = 'none';
+          mostrarDatosUsuario();
+
+          alert('Contraseña actualizada correctamente.');
+          await cargarTodosLosDatos();
+          updateDashboard();
+        } else {
+          alert(data.message || 'No se pudo actualizar la contraseña.');
+        }
+      } catch (error) {
+        console.error('Error al cambiar contraseña:', error);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Guardar contraseña';
+      }
+    });
+  </script>
+</body>
 </html>
