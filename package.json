@@ -1,0 +1,21 @@
+{
+  "name": "control-estudio-liceo",
+  "version": "1.0.0",
+  "description": "Sistema de Control de Estudio de Liceo con MySQL/phpMyAdmin",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.3",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.24.5",
+    "sql.js": "^1.14.2",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
