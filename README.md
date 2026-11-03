@@ -152,44 +152,6 @@ El sistema ha sido desarrollado bajo una arquitectura modular y limpia, incorpor
 
 
 ---
-
-## 📐 Arquitectura y Estructura de la Base de Datos Mermaid
-
-El sistema utiliza una base de datos relacional SQLite modelada mediante las siguientes entidades principales:
-
-```mermaid
-erDiagram
-    estudiantes ||..o{ notas : tiene
-
-    usuarios {
-        INTEGER id PK
-        TEXT usuario UK
-        TEXT clave "Hash de la clave"
-        TEXT rol "Permisos de administracion del sistema"
-    }
-
-    estudiantes {
-        INTEGER id PK
-        TEXT codigoExpediente UK
-        TEXT cedula UK
-        TEXT nombreApellido
-        TEXT fechaNacimiento "Fecha ISO 8601: YYYY-MM-DD"
-        TEXT anoCursar
-        TEXT seccion
-        TEXT condicion
-        TEXT fotoUrl "Opcional: admite NULL"
-    }
-
-    notas {
-        INTEGER id PK
-        INTEGER estudiante_id FK "Referencia a estudiantes.id; NOT NULL"
-        TEXT nombreAsignatura
-        REAL lapso1
-        REAL lapso2
-        REAL lapso3
-        REAL definitiva
-    }
-
     
 ## 👥 Créditos y Desarrolladores del Proyecto
 
