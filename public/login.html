@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar Sesión - Control Liceo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, #0b3b6f 0%, #08284c 45%, #05162b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .login-container {
+      display: flex;
+      flex-direction: row;
+      width: 90%;
+      max-width: 900px;
+      height: 480px;
+      background: rgba(10, 25, 47, 0.4);
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+    }
+
+    /* PANEL IZQUIERDO: LOGO */
+    .login-branding {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      background: linear-gradient(90deg, rgba(12, 59, 111, 0.5) 0%, rgba(5, 22, 43, 0.1) 100%);
+    }
+
+    .login-branding img {
+      max-width: 260px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3));
+    }
+
+    /* PANEL DERECHO: FORMULARIO */
+    .login-form-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 40px 50px;
+      color: #ffffff;
+    }
+
+    .login-form-container h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 25px;
+      color: #ffffff;
+    }
+
+    .login-group {
+      margin-bottom: 20px;
+    }
+
+    .login-group label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #e2e8f0;
+    }
+
+    .login-group input {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid #1e3a8a;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .login-group input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .btn-submit-login {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-submit-login:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    @media (max-width: 768px) {
+      .login-container {
+        flex-direction: column;
+        height: auto;
+        max-width: 400px;
+      }
+      .login-branding img {
+        max-width: 180px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="login-branding">
+      <img src="STUDIOCT.jpg" alt="StudioCT Logo">
+    </div>
+
+    <div class="login-form-container">
+      <h2>Inicia sesión</h2>
+      <form id="login-form">
+        <div class="login-group">
+          <label for="login-user">Usuario</label>
+          <input type="text" id="login-user" placeholder="Usuario" required autocomplete="username">
+        </div>
+
+        <div class="login-group">
+          <label for="login-pass">Contraseña</label>
+          <input type="password" id="login-pass" placeholder="Contraseña" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn-submit-login">Continuar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Si ya está autenticado, redirige al sistema principal
+    if (localStorage.getItem('auth_liceo') === 'true') {
+      window.location.href = '/index.html';
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const usuario = document.getElementById('login-user').value;
+      const clave = document.getElementById('login-pass').value;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario, clave })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          localStorage.setItem('auth_liceo', 'true');
+          window.location.href = '/index.html';
+        } else {
+          alert(data.message || 'Usuario o contraseña incorrectos');
+        }
+      } catch (error) {
+        console.error('Error de conexión:', error);
+        alert('No se pudo establecer conexión con el servidor.');
+      }
+    });
+  </script>
+</body>
+</html>

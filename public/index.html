@@ -83,13 +83,36 @@
       .main-wrapper { overflow: visible; }
       .boletin-paper { border: none; box-shadow: none; padding: 0; width: 100%; max-width: 100%; }
     }
+
+/* Oculta todo el cuerpo del index por defecto para evitar el destello */
+  body.checking-auth {
+    visibility: hidden;
+    background: #0f172a;
+  }
+
   </style>
 </head>
-<body>
+<body class="checking-auth">
 
-  <!-- BARRA LATERAL RESTAURADA -->
+  <script>
+    // Verificación inmediata antes de renderizar cualquier elemento visual
+    if (localStorage.getItem('auth_liceo') !== 'true') {
+      window.location.href = '/login.html';
+    } else {
+      // Si está autenticado, hacemos visible el body de inmediato
+      document.body.classList.remove('checking-auth');
+    }
+
+    // Función para cerrar sesión
+    function logout() {
+      localStorage.removeItem('auth_liceo');
+      window.location.href = '/login.html';
+    }
+  </script>
+
+  <!-- BARRA LATERAL -->
   <aside class="sidebar">
-    <div class="brand">🏫 CONTROL LICEO</div>
+    <div class="brand">🏫 STUDIOCT</div>
     <nav>
       <div class="nav-item active" onclick="switchTab('dashboard', event)">📊 Dashboard</div>
       <div class="nav-item" onclick="switchTab('estudiantes', event)">👥 Estudiantes (CRUD)</div>
@@ -97,12 +120,13 @@
       <div class="nav-item" onclick="switchTab('boletin', event)">📜 Boletín Escolar</div>
     </nav>
     <div class="user-footer">Sistema Escolar v2.0</div>
+    <button onclick="logout()" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.75rem;">Salir</button>
   </aside>
 
   <main class="main-wrapper">
     <header class="header">
       <h2 id="page-title">Panel General</h2>
-      <span style="font-size: 0.9rem; color: var(--text-muted);">Año Escolar 2026</span>
+      <span style="font-size: 0.9rem; color: var(--text-muted);">Bienvenido</span>
     </header>
 
     <div class="content-body">
@@ -126,8 +150,8 @@
           <form id="student-form">
             <input type="hidden" id="student-id">
             <div class="form-grid">
-              <div class="form-group"><label>Nombre y Apellido</label><input type="text" id="nombreApellido" required placeholder="Ej: Pedro Pérez"></div>
-              <div class="form-group"><label>Cédula de Identidad</label><input type="text" id="cedula" required placeholder="Ej: V-28123456"></div>
+              <div class="form-group"><label>Nombre y Apellido</label><input type="text" id="nombreApellido" required placeholder="Nombre y Apellido"></div>
+              <div class="form-group"><label>Cédula de Identidad</label><input type="text" id="cedula" required placeholder="V-"></div>
               <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="fechaNacimiento" required></div>
               <div class="form-group">
                 <label>Año a Cursar</label>
@@ -209,11 +233,34 @@
       <!-- 3. CARGA DE NOTAS -->
       <section id="view-notas" class="view-section">
         <div class="panel-box">
-          <h3>Carga de Calificaciones (9 Materias x 3 Lapses)</h3>
-          <div class="form-group" style="max-width: 380px;">
-            <label>Seleccionar Estudiante</label>
+          <h3>Carga de Calificaciones</h3>
+          
+          <!-- FILTROS DE BÚSQUEDA INTERACTIVA -->
+          <div class="filter-bar" style="margin-bottom: 20px;">
+            <input type="text" id="filter-notas-cedula" placeholder="🔍 Buscar estudiante por Cédula, Nombre o Expediente..." oninput="renderNotasEstudiantesList()">
+            <select id="filter-notas-ano" onchange="renderNotasEstudiantesList()">
+              <option value="TODOS">Todos los Años</option>
+              <option value="1er Año">1er Año</option>
+              <option value="2do Año">2do Año</option>
+              <option value="3er Año">3er Año</option>
+              <option value="4to Año">4to Año</option>
+              <option value="5to Año">5to Año</option>
+            </select>
+            <select id="filter-notas-seccion" onchange="renderNotasEstudiantesList()">
+              <option value="TODAS">Todas las Secciones</option>
+              <option value="A">Sección A</option>
+              <option value="B">Sección B</option>
+              <option value="C">Sección C</option>
+              <option value="D">Sección D</option>
+            </select>
+          </div>
+
+          <!-- LISTA DE SELECCIÓN RÁPIDA -->
+          <div class="form-group" style="max-width: 450px;">
+            <label>Seleccionar Estudiante Encontrado</label>
             <select id="select-student-notas" onchange="loadStudentGrades()"></select>
           </div>
+
           <table>
             <thead>
               <tr><th>Asignatura</th><th>1er Lapso</th><th>2do Lapso</th><th>3er Lapso</th><th>Definitiva</th></tr>
@@ -225,10 +272,35 @@
       </section>
 
       <!-- 4. BOLETÍN ESCOLAR OFICIAL -->
+      
       <section id="view-boletin" class="view-section">
-        <div class="no-print" style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center;">
-          <select id="select-student-boletin" onchange="renderBoletin()" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); width: 320px;"></select>
-          <button class="btn btn-primary" onclick="window.print()">🖨️ Descargar / Imprimir Boletín (PDF)</button>
+        <div class="panel-box no-print" style="margin-bottom: 20px;">
+          <h3>Generación de Boletín Oficial</h3>
+          
+          <!-- FILTROS DE BÚSQUEDA INTERACTIVA -->
+          <div class="filter-bar" style="margin-bottom: 15px;">
+            <input type="text" id="filter-boletin-cedula" placeholder="🔍 Buscar estudiante por Cédula, Nombre o Expediente..." oninput="renderBoletinEstudiantesList()">
+            <select id="filter-boletin-ano" onchange="renderBoletinEstudiantesList()">
+              <option value="TODOS">Todos los Años</option>
+              <option value="1er Año">1er Año</option>
+              <option value="2do Año">2do Año</option>
+              <option value="3er Año">3er Año</option>
+              <option value="4to Año">4to Año</option>
+              <option value="5to Año">5to Año</option>
+            </select>
+            <select id="filter-boletin-seccion" onchange="renderBoletinEstudiantesList()">
+              <option value="TODAS">Todas las Secciones</option>
+              <option value="A">Sección A</option>
+              <option value="B">Sección B</option>
+              <option value="C">Sección C</option>
+              <option value="D">Sección D</option>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+            <select id="select-student-boletin" onchange="renderBoletin()" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); flex: 1; min-width: 300px;"></select>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Descargar / Imprimir Boletín (PDF)</button>
+          </div>
         </div>
 
         <div class="boletin-paper" id="boletin-render">
@@ -240,6 +312,17 @@
   </main>
 
   <script>
+    // Protección de ruta en el Frontend: Si no hay sesión activa, redirige a login.html
+    if (localStorage.getItem('auth_liceo') !== 'true') {
+      window.location.href = '/login.html';
+    }
+
+    // Función para cerrar sesión
+    function logout() {
+      localStorage.removeItem('auth_liceo');
+      window.location.href = '/login.html';
+    }
+
     let estudiantes = [];
     let currentStudentForNotes = null;
 
@@ -255,11 +338,11 @@
       document.getElementById(`view-${tabId}`).classList.add('active');
       
       if (tabId === 'dashboard') updateDashboard();
-      if (tabId === 'notas') populateStudentDropdown('select-student-notas');
-      if (tabId === 'boletin') { populateStudentDropdown('select-student-boletin'); renderBoletin(); }
+      if (tabId === 'notas') renderNotasEstudiantesList();
+      if (tabId === 'boletin') renderBoletinEstudiantesList();
     }
 
-    // Búsqueda e Interactivación combinada
+    // Búsqueda general para la tabla de Estudiantes (CRUD)
     async function fetchFilteredEstudiantes() {
       const busqueda = document.getElementById('filter-cedula').value;
       const ano = document.getElementById('filter-ano').value;
@@ -274,6 +357,9 @@
           estudiantes = data.data;
           renderTable();
           updateDashboard();
+          // Si nos encontramos en notas o boletín, actualizamos también sus listas en tiempo real
+          if (document.getElementById('view-notas').classList.contains('active')) renderNotasEstudiantesList();
+          if (document.getElementById('view-boletin').classList.contains('active')) renderBoletinEstudiantesList();
         }
       } catch (e) { console.error('Error al obtener estudiantes:', e); }
     }
@@ -351,9 +437,8 @@
     });
 
     function editStudent(id) {
-// Cambiar la línea de búsqueda por esta:
       const st = estudiantes.find(s => String(s._id) === String(id));
-            if (!st) return;
+      if (!st) return;
 
       document.getElementById('student-id').value = st._id;
       document.getElementById('nombreApellido').value = st.nombreApellido;
@@ -387,20 +472,45 @@
       document.getElementById('form-title').innerText = 'Inscribir Nuevo Estudiante';
     }
 
-    // DROPDOWNS Y CARGA DE NOTAS
-    function populateStudentDropdown(selectId) {
-      const select = document.getElementById(selectId);
-      select.innerHTML = estudiantes.map(st => `<option value="${st._id}">${st.nombreApellido} (C.I: ${st.cedula}) - ${st.anoCursar} "${st.seccion}"</option>`).join('');
-      if (selectId === 'select-student-notas') loadStudentGrades();
+    // ==========================================
+    // BÚSQUEDA INTERACTIVA PARA CARGA DE NOTAS
+    // ==========================================
+    function renderNotasEstudiantesList() {
+      const busqueda = document.getElementById('filter-notas-cedula').value.toLowerCase();
+      const ano = document.getElementById('filter-notas-ano').value;
+      const seccion = document.getElementById('filter-notas-seccion').value;
+
+      const filtrados = estudiantes.filter(st => {
+        const matchText = st.cedula.toLowerCase().includes(busqueda) || 
+                          st.nombreApellido.toLowerCase().includes(busqueda) || 
+                          st.codigoExpediente.toLowerCase().includes(busqueda);
+        const matchAno = ano === 'TODOS' || st.anoCursar === ano;
+        const matchSeccion = seccion === 'TODAS' || st.seccion === seccion;
+        return matchText && matchAno && matchSeccion;
+      });
+
+      const select = document.getElementById('select-student-notas');
+      if (filtrados.length === 0) {
+        select.innerHTML = `<option value="">-- No se encontraron estudiantes --</option>`;
+        document.getElementById('grades-body').innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Sin resultados para mostrar notas.</td></tr>`;
+        currentStudentForNotes = null;
+        return;
+      }
+
+      select.innerHTML = filtrados.map(st => `<option value="${st._id}">${st.nombreApellido} (C.I: ${st.cedula}) - ${st.anoCursar} "${st.seccion}"</option>`).join('');
+      loadStudentGrades();
     }
 
     function loadStudentGrades() {
       const id = document.getElementById('select-student-notas').value;
-      // Cambiar la línea de búsqueda por esta:
-currentStudentForNotes = estudiantes.find(s => String(s._id) === String(id));
-            if (!currentStudentForNotes) return;
-
+      currentStudentForNotes = estudiantes.find(s => String(s._id) === String(id));
       const body = document.getElementById('grades-body');
+
+      if (!currentStudentForNotes) {
+        body.innerHTML = '';
+        return;
+      }
+
       body.innerHTML = currentStudentForNotes.notas.map((n, index) => {
         const def = ((n.lapso1 + n.lapso2 + n.lapso3) / 3).toFixed(1);
         return `
@@ -432,11 +542,38 @@ currentStudentForNotes = estudiantes.find(s => String(s._id) === String(id));
       fetchFilteredEstudiantes();
     }
 
+    // ==========================================
+    // BÚSQUEDA INTERACTIVA PARA BOLETÍN ESCOLAR
+    // ==========================================
+    function renderBoletinEstudiantesList() {
+      const busqueda = document.getElementById('filter-boletin-cedula').value.toLowerCase();
+      const ano = document.getElementById('filter-boletin-ano').value;
+      const seccion = document.getElementById('filter-boletin-seccion').value;
+
+      const filtrados = estudiantes.filter(st => {
+        const matchText = st.cedula.toLowerCase().includes(busqueda) || 
+                          st.nombreApellido.toLowerCase().includes(busqueda) || 
+                          st.codigoExpediente.toLowerCase().includes(busqueda);
+        const matchAno = ano === 'TODOS' || st.anoCursar === ano;
+        const matchSeccion = seccion === 'TODAS' || st.seccion === seccion;
+        return matchText && matchAno && matchSeccion;
+      });
+
+      const select = document.getElementById('select-student-boletin');
+      if (filtrados.length === 0) {
+        select.innerHTML = `<option value="">-- No se encontraron estudiantes --</option>`;
+        document.getElementById('boletin-render').innerHTML = `<p style="text-align:center; color: var(--text-muted);">Seleccione un estudiante para generar su boletín.</p>`;
+        return;
+      }
+
+      select.innerHTML = filtrados.map(st => `<option value="${st._id}">${st.nombreApellido} (C.I: ${st.cedula}) - ${st.anoCursar} "${st.seccion}"</option>`).join('');
+      renderBoletin();
+    }
+
     // RENDERIZADOR DEL BOLETÍN
     function renderBoletin() {
       const id = document.getElementById('select-student-boletin').value;
-      // Cambiar la línea de búsqueda por esta:
-const st = estudiantes.find(s => String(s._id) === String(id));
+      const st = estudiantes.find(s => String(s._id) === String(id));
       const container = document.getElementById('boletin-render');
 
       if (!st) {
@@ -510,6 +647,5 @@ const st = estudiantes.find(s => String(s._id) === String(id));
       });
       document.getElementById('stat-promedio').innerText = estudiantes.length ? (totalProm / estudiantes.length).toFixed(2) : '0.0';
     }
-  </script>
-</body>
+  </script></body>
 </html>

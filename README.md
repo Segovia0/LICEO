@@ -125,39 +125,72 @@ Abre cualquier navegador web y accede a:
 * **Plantilla Formateada:** Genera una vista de hoja oficial A4 con membrete institucional, datos del estudiante, tabla de notas completas por lapso, promedio general y líneas para firmas del Director(a) y Control de Estudio.
 * **Estilos CSS para Impresión (`@media print`):** Oculta automáticamente la barra lateral (`.sidebar`), botones y filtros durante la impresión, permitiendo guardar el boletín directamente como un archivo PDF limpio y profesional desde el navegador (`Ctrl + P`).
 
+
+
+
+
+## 🚀 Actualizacion y mejoras del Sistema 03/11/2026
+
+El sistema ha sido desarrollado bajo una arquitectura modular y limpia, incorporando las siguientes características técnicas y de seguridad:
+
+### 1. 🔐 Seguridad y Autenticación de Usuarios
+* **Protección de Rutas en el Frontend:** Validación instantánea en el cliente (`localStorage`) antes de renderizar las vistas protegidas, redirigiendo automáticamente a `login.html` si no existe una sesión activa.
+* **Controlador de Acceso Backend (`authController.js`):** Gestión centralizada de peticiones HTTP para el inicio de sesión seguro contra la base de datos.
+* **Cierre de Sesión Global:** Botón de salida integrado directamente en la barra lateral (`sidebar`) para invalidar la sesión de forma limpia.
+
+### 2. ⚡ Auto-Inicialización del Servidor (`Server Bootstrap`)
+* **Modelo de Datos Modular (`tabla-model`):** Arquitectura desacoplada para interactuar con SQLite mediante métodos limpios (`all`, `insert`).
+* **Bootstrap del Administrador por Defecto:** Al iniciar el servidor por primera vez (`node server.js`), el sistema verifica de forma asíncrona la existencia de registros y **crea automáticamente el usuario administrador por defecto** (`admin` / `1234`) si la tabla se encuentra vacía, evitando configuraciones manuales complejas.
+
+### 3. 🔍 Búsqueda y Filtrado Interactivo en Tiempo Real
+* **Filtros Combinados:** Implementación de barras de búsqueda dinámica tanto en el CRUD principal de estudiantes como en los módulos de **Carga de Notas** y **Boletín Escolar**.
+* **Criterios Múltiples:** Permite buscar simultáneamente por coincidencia de texto (Cédula, Nombre o Expediente) y filtrar de manera cruzada por **Año** y **Sección** en tiempo real.
+
+### 4. 📜 Generación de Boletines Oficiales (Listos para Impresión)
+* **Formato Académico A4:** Módulo adaptado para maquetar el boletín informativo oficial con los membretes del Ministerio del Poder Popular para la Educación y los tres lapsos evaluativos.
+* **Estilos de Impresión Optimizados (`@media print`):** Reglas CSS dedicadas que ocultan automáticamente la barra lateral, botones y elementos de navegación al exportar o imprimir en formato físico o PDF.
+
+
 ---
 
-## 🗄️ Modelo Relacional de Base de Datos (SQLite)
+## 📐 Arquitectura y Estructura de la Base de Datos Mermaid
 
-El sistema utiliza un esquema relacional con clave foránea (`FOREIGN KEY`) e integridad referencial:
+El sistema utiliza una base de datos relacional SQLite modelada mediante las siguientes entidades principales:
 
-```sql
--- Tabla: estudiantes
-CREATE TABLE IF NOT EXISTS estudiantes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombre_apellido TEXT NOT NULL,
-    cedula TEXT NOT NULL UNIQUE,
-    fecha_nacimiento TEXT NOT NULL,
-    ano_cursar TEXT NOT NULL,
-    seccion TEXT NOT NULL,
-    condicion TEXT NOT NULL,
-    codigo_expediente TEXT NOT NULL UNIQUE,
-    foto_url TEXT DEFAULT '',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+```mermaid
+erDiagram
+    estudiantes ||..o{ notas : tiene
 
--- Tabla: notas (Relación 1 a Muchos)
-CREATE TABLE IF NOT EXISTS notas (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    estudiante_id INTEGER NOT NULL,
-    nombre_materia TEXT NOT NULL,
-    lapso1 REAL DEFAULT 0.0,
-    lapso2 REAL DEFAULT 0.0,
-    lapso3 REAL DEFAULT 0.0,
-    FOREIGN KEY (estudiante_id) REFERENCES estudiantes(id) ON DELETE CASCADE
-);
+    usuarios {
+        INTEGER id PK
+        TEXT usuario UK
+        TEXT clave "Hash de la clave"
+        TEXT rol "Permisos de administracion del sistema"
+    }
 
-```
+    estudiantes {
+        INTEGER id PK
+        TEXT codigoExpediente UK
+        TEXT cedula UK
+        TEXT nombreApellido
+        TEXT fechaNacimiento "Fecha ISO 8601: YYYY-MM-DD"
+        TEXT anoCursar
+        TEXT seccion
+        TEXT condicion
+        TEXT fotoUrl "Opcional: admite NULL"
+    }
+
+    notas {
+        INTEGER id PK
+        INTEGER estudiante_id FK "Referencia a estudiantes.id; NOT NULL"
+        TEXT nombreAsignatura
+        REAL lapso1
+        REAL lapso2
+        REAL lapso3
+        REAL definitiva
+    }
+
+    
 ## 👥 Créditos y Desarrolladores del Proyecto
 
 * **Giovanny Segovia** — C.I: 31.588.187
