@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
   <title>Sistema de Control de Estudio - StudioCT</title>
   <script src="/chart.min.js"></script>
+=======
+  <title>SDCE</title>
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
   <style>
     :root {
       --bg-sidebar: #0f172a;
@@ -173,6 +177,7 @@
     /* MATRIZ DE NOTAS */
     .nota-input { width: 60px; text-align: center; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; }
 
+<<<<<<< HEAD
     /* NOTAS Y BOLETINES UNIFICADO */
     .btn-mode {
       background: transparent;
@@ -563,12 +568,24 @@
       }
     }
 
+=======
+    /* BOLETÍN A4 */
+    .boletin-paper { background: #fff; border: 1px solid var(--border-color); padding: 40px; max-width: 800px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-radius: 8px; }
+    @media print {
+      body { background: #fff; }
+      .sidebar, .header, .no-print { display: none !important; }
+      .main-wrapper { overflow: visible; }
+      .boletin-paper { border: none; box-shadow: none; padding: 0; width: 100%; max-width: 100%; }
+    }
+
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
     body.checking-auth { visibility: hidden; background: #0f172a; }
   </style>
 </head>
 <body class="checking-auth">
 
   <script>
+<<<<<<< HEAD
     // Escape de caracteres HTML para prevenir Stored XSS
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
@@ -622,6 +639,9 @@
     // Comprobación de autenticación al cargar
     const token = localStorage.getItem('token_liceo');
     if (!token) {
+=======
+    if (localStorage.getItem('auth_liceo') !== 'true') {
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
       window.location.href = '/login.html';
     } else {
       document.body.classList.remove('checking-auth');
@@ -712,6 +732,7 @@
     <div class="brand">SDCE</div>
     <nav>
       <div class="nav-item active" onclick="switchTab('dashboard', event)">Dashboard</div>
+<<<<<<< HEAD
       <div class="nav-item" onclick="switchTab('estudiantes', event)">Estudiantes</div>
       <div class="nav-item" id="nav-notas-boletin" onclick="switchTab('notas-boletin', event)">Notas y Boletines</div>
       <div class="nav-item" id="nav-sabana-notas" onclick="switchTab('sabana-notas', event)">Sábanas de Evaluación</div>
@@ -723,12 +744,24 @@
     <div class="user-footer" id="usuario-actual">Sesión activa</div>
     <button onclick="mostrarModalCambioClave()" class="btn" style="margin: 0 15px 8px; padding: 6px 10px; font-size: 0.75rem; background: #334155; color: #fff;">🔑 Cambiar contraseña</button>
     <button onclick="logout()" class="btn btn-danger" style="margin: 0 15px 15px; padding: 6px 10px; font-size: 0.75rem;">Salir</button>
+=======
+      <div class="nav-item" onclick="switchTab('estudiantes', event)">Estudiantes (CRUD)</div>
+      <div class="nav-item" onclick="switchTab('notas', event)">Carga de Notas</div>
+      <div class="nav-item" onclick="switchTab('boletin', event)">Boletín Escolar</div>
+    </nav>
+    <div class="user-footer">v1.0</div>
+    <button onclick="logout()" class="btn btn-danger" style="margin: 15px; padding: 6px 10px; font-size: 0.75rem;">Salir</button>
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
   </aside>
 
   <main class="main-wrapper">
     <header class="header">
       <h2 id="page-title">Panel General</h2>
+<<<<<<< HEAD
       <span id="welcome-user" style="font-size: 0.9rem; color: var(--text-muted);">Bienvenido</span>
+=======
+      <span style="font-size: 0.9rem; color: var(--text-muted);">Bienvenido, Administrador</span>
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
     </header>
 
     <div class="content-body">
@@ -803,7 +836,11 @@
         <div class="panel-box">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3>Gestión e Inscripción de Estudiantes</h3>
+<<<<<<< HEAD
             <button class="btn btn-primary" id="btn-inscribir" onclick="abrirModalInscripcion()">➕ Inscribir Estudiante</button>
+=======
+            <button class="btn btn-primary" onclick="abrirModalInscripcion()">➕ Inscribir Estudiante</button>
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
           </div>
 
           <!-- BARRA DE BÚSQUEDA INTERACTIVA CON FILTROS -->
@@ -839,12 +876,17 @@
               <tr><th>Foto</th><th>Expediente</th><th>Cédula</th><th>Nombre y Apellido</th><th>Año / Sec</th><th>Condición</th><th>Estado</th><th>Acciones</th></tr>
             </thead>
             <tbody id="students-table-body">
+<<<<<<< HEAD
               <tr><td colspan="8" style="text-align:center; color: var(--text-muted);">Cargando estudiantes...</td></tr>
+=======
+              <tr><td colspan="7" style="text-align:center; color: var(--text-muted);">Escriba en el buscador para consultar o filtrar estudiantes...</td></tr>
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
             </tbody>
           </table>
         </div>
       </section>
 
+<<<<<<< HEAD
       <!-- 3. NOTAS Y BOLETINES (MÓDULO UNIFICADO) -->
       <section id="view-notas-boletin" class="view-section">
         <!-- BARRA DE CONTROL UNIFICADA (NO PRINT) -->
@@ -872,6 +914,53 @@
           <div class="filter-bar" style="margin-bottom: 16px;">
             <input type="text" id="filter-nb-busqueda" placeholder="🔍 Buscar por Cédula o Nombre..." oninput="debouncedBuscarEstudiantesNB()">
             <select id="filter-nb-ano" onchange="buscarEstudiantesNB()">
+=======
+      <!-- 3. CARGA DE NOTAS -->
+      <section id="view-notas" class="view-section">
+        <div class="panel-box">
+          <h3>Carga de Calificaciones</h3>
+          <div class="filter-bar" style="margin-bottom: 20px;">
+            <input type="text" id="filter-notas-cedula" placeholder="🔍 Buscar estudiante por Cédula o Nombre..." oninput="renderNotasEstudiantesList()">
+            <select id="filter-notas-ano" onchange="renderNotasEstudiantesList()">
+              <option value="TODOS">Todos los Años</option>
+              <option value="1er Año">1er Año</option>
+              <option value="2do Año">2do Año</option>
+              <option value="3er Año">3er Año</option>
+              <option value="4to Año">4to Año</option>
+              <option value="5to Año">5to Año</option>
+            </select>
+            <select id="filter-notas-seccion" onchange="renderNotasEstudiantesList()">
+              <option value="TODAS">Todas las Secciones</option>
+              <option value="A">Sección A</option>
+              <option value="B">Sección B</option>
+              <option value="C">Sección C</option>
+              <option value="D">Sección D</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="max-width: 450px;">
+            <label>Seleccionar Estudiante</label>
+            <select id="select-student-notas" onchange="loadStudentGrades()"></select>
+          </div>
+
+          <table>
+            <thead>
+              <tr><th>Asignatura</th><th>1er Lapso</th><th>2do Lapso</th><th>3er Lapso</th><th>Definitiva</th></tr>
+            </thead>
+            <tbody id="grades-body"></tbody>
+          </table>
+          <button class="btn btn-primary" onclick="saveGrades()" style="margin-top: 20px;">Guardar Calificaciones</button>
+        </div>
+      </section>
+
+      <!-- 4. BOLETÍN ESCOLAR -->
+      <section id="view-boletin" class="view-section">
+        <div class="panel-box no-print" style="margin-bottom: 20px;">
+          <h3>Generación de Boletín Oficial</h3>
+          <div class="filter-bar" style="margin-bottom: 15px;">
+            <input type="text" id="filter-boletin-cedula" placeholder="🔍 Buscar estudiante..." oninput="renderBoletinEstudiantesList()">
+            <select id="filter-boletin-ano" onchange="renderBoletinEstudiantesList()">
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
               <option value="TODOS">Todos los Años</option>
               <option value="1er Año">1er Año</option>
               <option value="2do Año">2do Año</option>
@@ -900,6 +989,7 @@
               <option value="3">3er Lapso (Momento III)</option>
             </select>
           </div>
+<<<<<<< HEAD
 
           <!-- Selector de Estudiante y Acciones -->
           <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
@@ -986,6 +1076,14 @@
             <p style="text-align: center; color: var(--text-muted); padding: 50px;">Seleccione un estudiante para generar su boletín oficial.</p>
           </div>
         </div>
+=======
+          <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+            <select id="select-student-boletin" onchange="renderBoletin()" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); flex: 1; min-width: 300px;"></select>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir / Descargar Boletín (PDF)</button>
+          </div>
+        </div>
+        <div class="boletin-paper" id="boletin-render"></div>
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
       </section>
 
       <!-- Vistas ocultas por compatibilidad -->
@@ -1760,6 +1858,7 @@
     </div>
   </div>
 
+<<<<<<< HEAD
   <!-- MODAL DE CAMBIO DE CONTRASEÑA -->
   <div id="modalClave" class="modal">
     <div class="modal-content" style="max-width: 460px;">
@@ -1886,6 +1985,8 @@
     </div>
   </div>
 
+=======
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
   <script>
     let estudiantes = [];
     let currentStudentForNotes = null;
@@ -1938,6 +2039,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+<<<<<<< HEAD
       mostrarDatosUsuario();
       aplicarPermisosUI();
 
@@ -1949,12 +2051,18 @@
       }
 
       cargarTodosLosDatos();
+=======
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
       updateDashboard();
     });
 
     async function cargarTodosLosDatos() {
       try {
+<<<<<<< HEAD
         const res = await authFetch('/api/estudiantes?estado=Activo');
+=======
+        const res = await fetch('/api/estudiantes');
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
         const data = await res.json();
         if (data.success) {
           estudiantes = data.data || [];
@@ -1965,6 +2073,7 @@
     }
 
     async function switchTab(tabId, evt) {
+<<<<<<< HEAD
       if (tabId === 'backup' && !puedeRespaldar()) {
         alert('No tiene permisos para acceder a los respaldos del sistema.');
         return;
@@ -1980,6 +2089,8 @@
         tabId = 'notas-boletin';
       }
 
+=======
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       
@@ -1989,6 +2100,7 @@
       const viewElement = document.getElementById(`view-${tabId}`);
       if (viewElement) viewElement.classList.add('active');
       
+<<<<<<< HEAD
       const titleEl = document.getElementById('page-title');
       if (titleEl) {
         if (tabId === 'dashboard') titleEl.innerText = 'Panel General';
@@ -2219,16 +2331,57 @@
           }
         });
 
+=======
+      if (tabId === 'dashboard') {
+        updateDashboard();
+      } else if (tabId === 'notas') {
+        await cargarTodosLosDatos();
+        renderNotasEstudiantesList();
+      } else if (tabId === 'boletin') {
+        await cargarTodosLosDatos();
+        renderBoletinEstudiantesList();
+      }
+    }
+
+    // DASHBOARD & MÉTRICAS
+    async function updateDashboard() {
+      try {
+        const res = await fetch('/api/estudiantes');
+        const data = await res.json();
+        if (data.success) {
+          estudiantes = data.data || [];
+          document.getElementById('stat-total').innerText = estudiantes.length;
+          const nuevos = estudiantes.filter(s => s.condicion === 'Nuevo Ingreso' || s.condicion === 'Regular').length;
+          document.getElementById('stat-nuevos').innerText = nuevos;
+          
+          let totalNotas = 0;
+          let sumNotas = 0;
+          estudiantes.forEach(s => {
+            if (s.notas) {
+              s.notas.forEach(n => {
+                const def = (n.lapso1 + n.lapso2 + n.lapso3) / 3;
+                sumNotas += def;
+                totalNotas++;
+              });
+            }
+          });
+          const prom = totalNotas > 0 ? (sumNotas / totalNotas).toFixed(1) : '0.0';
+          document.getElementById('stat-promedio').innerText = prom;
+        }
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
       } catch (e) { console.error('Error en Dashboard:', e); }
     }
 
     // MODAL FLOTANTE
     function abrirModalInscripcion() {
+<<<<<<< HEAD
       if (!puedeGestionarEstudiantes()) {
         alert('No tiene permisos para inscribir o editar estudiantes.');
         return;
       }
 
+=======
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
       document.getElementById('student-form').reset();
       document.getElementById('student-id').value = '';
       document.getElementById('modal-title').innerText = 'Inscribir Nuevo Estudiante';
@@ -2248,6 +2401,7 @@
       const estado = document.getElementById('filter-estado').value;
 
       const tbody = document.getElementById('students-table-body');
+<<<<<<< HEAD
       const tieneFiltro = busqueda !== '' || 
                           (ano && ano !== 'TODOS') || 
                           (seccion && seccion !== 'TODAS') || 
@@ -2261,6 +2415,15 @@
       tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">Cargando estudiantes...</td></tr>`;
 
       const params = new URLSearchParams({ busqueda, ano, seccion, estado });
+=======
+
+      if (busqueda === '' && ano === 'TODOS' && seccion === 'TODAS') {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted);">Escriba en el buscador o seleccione un filtro para consultar estudiantes...</td></tr>`;
+        return;
+      }
+
+      const params = new URLSearchParams({ busqueda, ano, seccion });
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
 
       try {
         const res = await authFetch(`/api/estudiantes?${params.toString()}`);
@@ -2269,8 +2432,11 @@
         if (data.success) {
           estudiantes = data.data || [];
           renderTable();
+<<<<<<< HEAD
         } else {
           tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #be123c;">${escapeHtml(data.message || 'No se pudo consultar la lista de estudiantes.')}</td></tr>`;
+=======
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
         }
       } catch (e) {
         console.error('Error al obtener estudiantes:', e);
@@ -2300,6 +2466,7 @@
         <tr>
           <td>
             ${st.fotoUrl 
+<<<<<<< HEAD
               ? `<img src="${encodeURI(st.fotoUrl)}" class="avatar" alt="Avatar">` 
               : `<div class="avatar" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:white; background:#2563eb;">${escapeHtml((st.nombreApellido || 'E').substring(0,2).toUpperCase())}</div>`}
           </td>
@@ -2309,6 +2476,16 @@
           <td>${escapeHtml(st.anoCursar)} "${escapeHtml(st.seccion)}"</td>
           <td><span style="padding: 3px 8px; border-radius: 4px; background: #e2e8f0; font-size: 0.8rem; font-weight: 600;">${escapeHtml(st.condicion)}</span></td>
           <td><span class="badge-estado ${claseEstado}">${escapeHtml(estado)}</span></td>
+=======
+              ? `<img src="${st.fotoUrl}" class="avatar">` 
+              : `<div class="avatar" style="display:flex; align-items:center; justify-content:center; font-weight:bold; color:white; background:#2563eb;">${(st.nombreApellido || 'E').substring(0,2).toUpperCase()}</div>`}
+          </td>
+          <td><b>${st.codigoExpediente || 'S/N'}</b></td>
+          <td>${st.cedula}</td>
+          <td>${st.nombreApellido}</td>
+          <td>${st.anoCursar} "${st.seccion}"</td>
+          <td><span style="padding: 3px 8px; border-radius: 4px; background: #e2e8f0; font-size: 0.8rem; font-weight: 600;">${st.condicion}</span></td>
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
           <td>
             ${puedeEditar ? `
               <button class="btn btn-warning" onclick="editStudent('${escapeHtml(st._id)}')" title="Editar">✏️</button>
@@ -2361,6 +2538,7 @@
       const url = id ? `/api/estudiantes/${id}` : '/api/estudiantes';
       const method = id ? 'PUT' : 'POST';
 
+<<<<<<< HEAD
       try {
         const res = await authFetch(url, { method, body: formData });
         const result = await res.json();
@@ -2374,6 +2552,17 @@
         }
       } catch (err) {
         console.error('Error al guardar estudiante:', err);
+=======
+      const res = await fetch(url, { method, body: formData });
+      const result = await res.json();
+      if (result.success) {
+        cerrarModalInscripcion();
+        fetchFilteredEstudiantes();
+        updateDashboard();
+        alert(id ? 'Estudiante actualizado correctamente' : '¡Estudiante inscrito con éxito!');
+      } else {
+        alert(result.message || 'Error al procesar la solicitud');
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
       }
     });
 
@@ -2399,6 +2588,7 @@
       }
 
       document.getElementById('modalEstudiante').style.display = 'flex';
+<<<<<<< HEAD
     }
 
     async function cambiarEstadoEstudiante(id, estado) {
@@ -2534,6 +2724,32 @@
         }
       }
     }
+=======
+    }
+
+    async function deleteStudent(id) {
+      if (confirm('¿Está seguro de eliminar este expediente permanentemente?')) {
+        await fetch(`/api/estudiantes/${id}`, { method: 'DELETE' });
+        fetchFilteredEstudiantes();
+        updateDashboard();
+      }
+    }
+
+    // BÚSQUEDA INTERACTIVA - NOTAS
+    function renderNotasEstudiantesList() {
+      const busqueda = (document.getElementById('filter-notas-cedula').value || '').toLowerCase();
+      const ano = document.getElementById('filter-notas-ano').value;
+      const seccion = document.getElementById('filter-notas-seccion').value;
+
+      const filtrados = estudiantes.filter(st => {
+        const matchText = (st.cedula || '').toLowerCase().includes(busqueda) || 
+                          (st.nombreApellido || '').toLowerCase().includes(busqueda) || 
+                          (st.codigoExpediente || '').toLowerCase().includes(busqueda);
+        const matchAno = ano === 'TODOS' || st.anoCursar === ano;
+        const matchSeccion = seccion === 'TODAS' || st.seccion === seccion;
+        return matchText && matchAno && matchSeccion;
+      });
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
 
     function debouncedBuscarEstudiantesNB() {
       clearTimeout(debounceBuscarNBTimer);
@@ -2611,6 +2827,7 @@
     async function cargarNotasEstudianteNB(id) {
       if (!id) return;
 
+<<<<<<< HEAD
       try {
         const res = await authFetch(`/api/estudiantes/${id}/notas`);
         const data = await res.json();
@@ -2676,6 +2893,10 @@
       const card = document.getElementById('nb-student-card');
       if (!card || !currentNBStudent) {
         if (card) card.style.display = 'none';
+=======
+      if (!currentStudentForNotes || !currentStudentForNotes.notas) {
+        body.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">El estudiante seleccionado no posee materias asignadas.</td></tr>`;
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
         return;
       }
 
@@ -2803,6 +3024,7 @@
       }).join('');
     }
 
+<<<<<<< HEAD
     function actualizarNotaEnTiempoReal(index, lapso, val) {
       if (!currentNBStudent || !currentNBStudent.notas || !currentNBStudent.notas[index]) return;
 
@@ -2844,6 +3066,47 @@
     async function guardarNotasNB() {
       if (!currentNBStudent || !currentNBStudent.id) {
         alert('Seleccione un estudiante antes de guardar.');
+=======
+    function updateLocalNota(index, lapso, val) {
+      if (!currentStudentForNotes || !currentStudentForNotes.notas[index]) return;
+      const num = Math.min(20, Math.max(0, parseFloat(val) || 0));
+      currentStudentForNotes.notas[index][`lapso${lapso}`] = num;
+      loadStudentGrades();
+    }
+
+    async function saveGrades() {
+      if (!currentStudentForNotes) return;
+      try {
+        await fetch(`/api/estudiantes/${currentStudentForNotes._id}/notas`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notas: currentStudentForNotes.notas })
+        });
+        alert('Calificaciones guardadas exitosamente');
+        updateDashboard();
+      } catch (e) { console.error('Error guardando notas:', e); }
+    }
+
+    // BÚSQUEDA INTERACTIVA - BOLETÍN ESCOLAR
+    function renderBoletinEstudiantesList() {
+      const busqueda = (document.getElementById('filter-boletin-cedula').value || '').toLowerCase();
+      const ano = document.getElementById('filter-boletin-ano').value;
+      const seccion = document.getElementById('filter-boletin-seccion').value;
+
+      const filtrados = estudiantes.filter(st => {
+        const matchText = (st.cedula || '').toLowerCase().includes(busqueda) || 
+                          (st.nombreApellido || '').toLowerCase().includes(busqueda) || 
+                          (st.codigoExpediente || '').toLowerCase().includes(busqueda);
+        const matchAno = ano === 'TODOS' || st.anoCursar === ano;
+        const matchSeccion = seccion === 'TODAS' || st.seccion === seccion;
+        return matchText && matchAno && matchSeccion;
+      });
+
+      const select = document.getElementById('select-student-boletin');
+      if (filtrados.length === 0) {
+        select.innerHTML = `<option value="">-- No se encontraron estudiantes --</option>`;
+        document.getElementById('boletin-render').innerHTML = `<p style="text-align:center; color: var(--text-muted);">Seleccione un estudiante para generar su boletín.</p>`;
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
         return;
       }
 
@@ -2889,6 +3152,7 @@
       }
     }
 
+<<<<<<< HEAD
     function renderBoletinNB() {
       const container = document.getElementById('nb-boletin-render');
       if (!container) return;
@@ -2924,10 +3188,34 @@
               <td style="text-align:center; padding: 9px; border: 1px solid #cbd5e1;">${celdaNota(n.lapso3)}</td>
               <td style="text-align:center; padding: 9px; border: 1px solid #cbd5e1; font-weight:bold; color:${color};">${defTexto}</td>
               <td style="text-align:center; padding: 9px; border: 1px solid #cbd5e1; font-size: 0.85rem;">${estatus}</td>
+=======
+    function renderBoletin() {
+      const id = document.getElementById('select-student-boletin').value;
+      const st = estudiantes.find(s => String(s._id) === String(id));
+      const container = document.getElementById('boletin-render');
+
+      if (!st) {
+        container.innerHTML = `<p style="text-align:center; color: var(--text-muted);">Seleccione un estudiante válido.</p>`;
+        return;
+      }
+
+      let notasHtml = '';
+      if (st.notas && st.notas.length > 0) {
+        notasHtml = st.notas.map(n => {
+          const def = ((n.lapso1 + n.lapso2 + n.lapso3) / 3).toFixed(1);
+          return `
+            <tr>
+              <td>${n.nombre}</td>
+              <td style="text-align:center;">${n.lapso1}</td>
+              <td style="text-align:center;">${n.lapso2}</td>
+              <td style="text-align:center;">${n.lapso3}</td>
+              <td style="text-align:center; font-weight:bold; color:${def < 10 ? 'red' : 'black'};">${def}</td>
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
             </tr>
           `;
         }).join('');
       } else {
+<<<<<<< HEAD
         notasFilasHtml = `<tr><td colspan="6" style="text-align:center; padding: 25px; border: 1px solid #cbd5e1;">Sin registro de asignaturas para este expediente.</td></tr>`;
       }
 
@@ -2967,6 +3255,28 @@
 
         <!-- TABLA DE CALIFICACIONES -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 0.88rem;">
+=======
+        notasHtml = `<tr><td colspan="5" style="text-align:center;">Sin registro de materias</td></tr>`;
+      }
+
+      container.innerHTML = `
+        <div style="text-align: center; border-bottom: 2px solid var(--text-dark); padding-bottom: 10px; margin-bottom: 20px;">
+          <h2>REPÚBLICA BOLIVARIANA DE VENEZUELA</h2>
+          <h3>LICEO "ELISA PULGAR DE RAMÍREZ"</h3>
+          <p>BOLETÍN INFORMATIVO DE CALIFICACIONES</p>
+        </div>
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; font-size: 0.9rem;">
+          <div>
+            <p><b>Estudiante:</b> ${st.nombreApellido}</p>
+            <p><b>Cédula:</b> ${st.cedula}</p>
+          </div>
+          <div>
+            <p><b>Año y Sección:</b> ${st.anoCursar} "${st.seccion}"</p>
+            <p><b>Expediente:</b> ${st.codigoExpediente || 'S/N'}</p>
+          </div>
+        </div>
+        <table>
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
           <thead>
             <tr style="background: #f1f5f9; color: #0f172a;">
               <th style="padding: 10px 12px; border: 1px solid #cbd5e1; text-align: left;">Asignatura</th>
@@ -2978,6 +3288,7 @@
             </tr>
           </thead>
           <tbody>
+<<<<<<< HEAD
             ${notasFilasHtml}
           </tbody>
           <tfoot>
@@ -4932,6 +5243,17 @@
 
       window.print();
     }
+=======
+            ${notasHtml}
+          </tbody>
+        </table>
+        <div style="display: flex; justify-content: space-between; margin-top: 50px; text-align: center;">
+          <div style="width: 200px; border-top: 1px solid var(--text-dark); font-size: 0.8rem; padding-top: 5px;">Profesor Guía</div>
+          <div style="width: 200px; border-top: 1px solid var(--text-dark); font-size: 0.8rem; padding-top: 5px;">Dirección / Control de Estudio</div>
+        </div>
+      `;
+    }
+>>>>>>> 33f6885010293ea847569abde699a4d8f3c9193d
   </script>
 </body>
 </html>
