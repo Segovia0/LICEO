@@ -70,11 +70,11 @@ function descargarYLimpiar(res, archivo, nombreDescarga) {
   });
 }
 
-// 1. Respaldo a Google Drive
+// 1. Respaldo a Google Drive — solo administrador
 router.post(
   '/cloud-backup',
   auth,
-  requireRole('admin', 'control_estudios'),
+  requireRole('admin', 'administrador', 'control_estudios'),
   async (req, res) => {
     const snapshot = path.join(TEMP_DIR, nombreRespaldo('.sqlite'));
 
@@ -126,11 +126,11 @@ router.post(
   }
 );
 
-// 2. Descargar copia consistente de la base de datos
+// 2. Descargar copia consistente de la base de datos — solo administrador
 router.get(
   '/descargar',
   auth,
-  requireRole('admin', 'control_estudios'),
+  requireRole('admin', 'administrador', 'control_estudios'),
   async (req, res) => {
     const snapshot = path.join(TEMP_DIR, nombreRespaldo('.sqlite'));
 
@@ -160,11 +160,11 @@ router.get(
   }
 );
 
-// 3. Descargar respaldo completo: base de datos + fotografías
+// 3. Descargar respaldo completo: base de datos + fotografías — solo administrador
 router.get(
   '/descargar-completo',
   auth,
-  requireRole('admin', 'control_estudios'),
+  requireRole('admin', 'administrador', 'control_estudios'),
   async (req, res) => {
     const archivo = path.join(TEMP_DIR, nombreRespaldo('.tar.gz'));
 
@@ -194,11 +194,11 @@ router.get(
   }
 );
 
-// 4. Restaurar base de datos desde archivo .sqlite/.db o respaldo completo .tar.gz
+// 4. Restaurar base de datos desde archivo — solo administrador
 router.post(
   '/restaurar',
   auth,
-  requireRole('admin'),
+  requireRole('admin', 'administrador'),
   backupUpload.single('backupFile'),
   async (req, res) => {
     if (!req.file) {

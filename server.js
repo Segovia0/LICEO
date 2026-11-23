@@ -18,6 +18,10 @@ const { getJwtSecret } = require('./config/security');
 const estudianteRoutes = require('./routes/estudianteRoutes');
 const authRoutes = require('./routes/authRoutes');
 const backupRoutes = require('./routes/backupRoutes');
+const constanciaRoutes = require('./routes/constanciaRoutes');
+const promocionRoutes = require('./routes/promocionRoutes');
+const sabanaRoutes = require('./routes/sabanaRoutes');
+const usuarioRoutes = require('./routes/usuarioRoutes');
 const usuarios = require('./models/usuarioModel');
 
 const securityHeaders = require('./middleware/securityHeaders');
@@ -64,7 +68,9 @@ async function inicializarAdminPorDefecto() {
       await usuarios.insert({
         usuario: adminUser,
         clave: claveHash,
-        rol: 'admin',
+        rol: 'administrador',
+        nombre_completo: 'Administrador del Sistema',
+        activo: 1,
         debe_cambiar_clave: CLAVES_DEBILES.has(adminPass)
       });
 
@@ -177,6 +183,10 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/estudiantes', estudianteRoutes);
 app.use('/api/backup', backupRoutes);
+app.use('/api/constancias', constanciaRoutes);
+app.use('/api/promocion', promocionRoutes);
+app.use('/api/sabana', sabanaRoutes);
+app.use('/api/usuarios', usuarioRoutes);
 
 // Redirección por defecto al login si entra a la raíz
 app.get('/', (req, res) => {

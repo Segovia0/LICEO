@@ -22,7 +22,7 @@ function firmarToken(usuario, { soloCambioClave = false } = {}) {
   const payload = {
     id: usuario.id,
     usuario: usuario.usuario,
-    rol: usuario.rol || 'admin'
+    rol: usuario.rol || 'administrador'
   };
 
   if (soloCambioClave) {
@@ -40,7 +40,9 @@ function datosPublicosUsuario(usuario) {
   return {
     id: usuario.id,
     usuario: usuario.usuario,
-    rol: usuario.rol || 'admin',
+    nombre_completo: usuario.nombre_completo || '',
+    rol: usuario.rol || 'administrador',
+    activo: usuario.activo !== 0 && usuario.activo !== false,
     debeCambiarClave: Boolean(usuario.debe_cambiar_clave)
   };
 }
@@ -74,6 +76,15 @@ exports.login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Usuario o contraseña incorrectos'
+      });
+    }
+
+    // Verificar que la cuenta esté activa antes de validar la contraseña
+    if (userFound.activo === 0 || userFound.activo === false) {
+      await bcrypt.compare(claveLimpia, DUMMY_HASH);
+      return res.status(401).json({
+        success: false,
+        message: 'La cuenta está desactivada. Contacte al administrador.'
       });
     }
 

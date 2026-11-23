@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../config/security');
+const usuarios = require('../models/usuarioModel');
 
 function extraerToken(req) {
   const authHeader = req.headers['authorization'];
@@ -33,7 +34,12 @@ function verificarToken(req, res) {
   }
 }
 
-function authMiddleware(req, res, next) {
+/**
+ * Middleware de autenticación principal.
+ * Verifica el JWT y consulta la BD para confirmar que el usuario sigue activo
+ * y que el rol no ha cambiado (por si el administrador lo modificó).
+ */
+async function authMiddleware(req, res, next) {
   const decoded = verificarToken(req, res);
   if (!decoded) return;
 
@@ -45,7 +51,27 @@ function authMiddleware(req, res, next) {
     });
   }
 
-  req.user = decoded;
+  // Verificación en BD: el usuario aún existe, está activo y tiene el rol correcto.
+  try {
+    const user = await usuarios.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Usuario no encontrado o eliminado.' });
+    }
+    if (user.activo === 0 || user.activo === false) {
+      return res.status(401).json({ success: false, message: 'La cuenta está desactivada. Contacte al administrador.' });
+    }
+    // Adjuntar datos frescos (el rol puede haber cambiado tras emitir el token)
+    req.user = {
+      ...decoded,
+      rol: user.rol,
+      nombre_completo: user.nombre_completo || user.usuario
+    };
+  } catch (err) {
+    console.error('[AUTH] Error al verificar usuario en BD:', err.message);
+    // Si la BD falla, usamos los datos del token como fallback
+    req.user = decoded;
+  }
+
   next();
 }
 
@@ -62,15 +88,20 @@ function passwordChangeAuth(req, res, next) {
 
 /**
  * Restringe una ruta a uno o varios roles.
- * Si el token es antiguo y no trae rol, se trata como consulta (sin escritura).
+ * Roles válidos del sistema: 'administrador', 'profesor', 'director'
+ * (mantiene compatibilidad con roles legacy: 'admin', 'control_estudios', 'docente')
  */
 function requireRole(...roles) {
   return (req, res, next) => {
     const rol = req.user?.rol || 'consulta';
 
-    if (!roles.includes(rol)) {
+    // Mapeo de roles legacy a nuevos roles
+    const rolNormalizado = normalizarRol(rol);
+
+    if (!roles.includes(rolNormalizado) && !roles.includes(rol)) {
       return res.status(403).json({
         success: false,
+        code: 'FORBIDDEN',
         message: 'No tiene permisos para realizar esta acción.'
       });
     }
@@ -79,6 +110,20 @@ function requireRole(...roles) {
   };
 }
 
+/**
+ * Normaliza roles legacy para compatibilidad.
+ * 'admin' → 'administrador', 'control_estudios' → 'administrador', 'docente' → 'profesor'
+ */
+function normalizarRol(rol) {
+  const mapa = {
+    'admin': 'administrador',
+    'control_estudios': 'administrador',
+    'docente': 'profesor'
+  };
+  return mapa[rol] || rol;
+}
+
 module.exports = authMiddleware;
 module.exports.passwordChangeAuth = passwordChangeAuth;
 module.exports.requireRole = requireRole;
+module.exports.normalizarRol = normalizarRol;

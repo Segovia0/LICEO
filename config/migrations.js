@@ -141,6 +141,21 @@ async function crearIndices() {
   await dbConnection.query(
     'CREATE INDEX IF NOT EXISTS idx_auditoria_fecha ON auditoria(created_at)'
   );
+  await dbConnection.query(
+    'CREATE INDEX IF NOT EXISTS idx_notas_historico_estudiante ON notas_historico(estudiante_id)'
+  );
+  await dbConnection.query(
+    'CREATE INDEX IF NOT EXISTS idx_notas_historico_periodo ON notas_historico(periodo_escolar, ano_cursado)'
+  );
+  await dbConnection.query(
+    'CREATE INDEX IF NOT EXISTS idx_promociones_estudiante ON promociones_historial(estudiante_id)'
+  );
+  await dbConnection.query(
+    'CREATE INDEX IF NOT EXISTS idx_promociones_cierre ON promociones_historial(cierre_id)'
+  );
+  await dbConnection.query(
+    'CREATE INDEX IF NOT EXISTS idx_cierres_periodo_ano_seccion ON cierres_periodo(periodo_escolar, ano_cursar, seccion)'
+  );
 }
 
 async function normalizarEstudiantes() {
@@ -252,8 +267,37 @@ async function asegurarEsquemaBase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       usuario TEXT NOT NULL,
       clave TEXT NOT NULL,
-      rol TEXT DEFAULT 'admin'
+      rol TEXT DEFAULT 'administrador'
     )`
+  );
+}
+
+async function asegurarEsquemaRBAC() {
+  // Columnas RBAC en la tabla de usuarios
+  await Promise.all([
+    agregarColumnaSiFalta('usuarios', 'activo', 'INTEGER NOT NULL DEFAULT 1'),
+    agregarColumnaSiFalta('usuarios', 'nombre_completo', "TEXT NOT NULL DEFAULT ''")
+  ]);
+
+  // Tabla de asignaciones docentes
+  await dbConnection.query(
+    `CREATE TABLE IF NOT EXISTS asignaciones_docentes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      usuario_id INTEGER NOT NULL,
+      nombre_materia TEXT NOT NULL,
+      ano_cursar TEXT NOT NULL,
+      seccion TEXT NOT NULL,
+      periodo_escolar TEXT NOT NULL DEFAULT '2025-2026',
+      FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+      UNIQUE(usuario_id, nombre_materia, ano_cursar, seccion)
+    )`
+  );
+
+  await dbConnection.query(
+    'CREATE INDEX IF NOT EXISTS idx_asignaciones_usuario ON asignaciones_docentes(usuario_id)'
+  );
+  await dbConnection.query(
+    'CREATE INDEX IF NOT EXISTS idx_asignaciones_ano_seccion ON asignaciones_docentes(ano_cursar, seccion)'
   );
 }
 
@@ -296,6 +340,7 @@ async function runMigrations() {
 
   // Permite arrancar también sobre una base nueva, sin tablas previas.
   await asegurarEsquemaBase();
+  await asegurarEsquemaRBAC();
 
   await dbConnection.query(
     `CREATE TABLE IF NOT EXISTS migraciones (
@@ -316,6 +361,9 @@ async function runMigrations() {
   if (await agregarColumnaSiFalta('estudiantes', 'motivo_retiro', 'TEXT')) {
     nuevasColumnas.push('estudiantes.motivo_retiro');
   }
+  if (await agregarColumnaSiFalta('estudiantes', 'periodo_escolar', "TEXT DEFAULT '2025-2026'")) {
+    nuevasColumnas.push('estudiantes.periodo_escolar');
+  }
   if (await agregarColumnaSiFalta('usuarios', 'debe_cambiar_clave', 'INTEGER NOT NULL DEFAULT 0')) {
     nuevasColumnas.push('usuarios.debe_cambiar_clave');
   }
@@ -332,6 +380,74 @@ async function runMigrations() {
       datos_despues TEXT,
       ip TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+  );
+
+  // Módulo de Cierre y Promoción Masiva: tablas de historial y auditoría académica
+  await dbConnection.query(
+    `CREATE TABLE IF NOT EXISTS cierres_periodo (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      periodo_escolar TEXT NOT NULL,
+      nuevo_periodo_escolar TEXT,
+      ano_cursar TEXT NOT NULL,
+      seccion TEXT NOT NULL,
+      total_estudiantes INTEGER NOT NULL,
+      promovidos INTEGER DEFAULT 0,
+      graduados INTEGER DEFAULT 0,
+      pendientes INTEGER DEFAULT 0,
+      repitientes INTEGER DEFAULT 0,
+      retirados INTEGER DEFAULT 0,
+      trasladados INTEGER DEFAULT 0,
+      sin_cambio INTEGER DEFAULT 0,
+      usuario_id INTEGER,
+      usuario TEXT,
+      observaciones TEXT,
+      fecha_cierre DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`
+  );
+
+  await dbConnection.query(
+    `CREATE TABLE IF NOT EXISTS notas_historico (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cierre_id INTEGER,
+      estudiante_id INTEGER NOT NULL,
+      periodo_escolar TEXT NOT NULL,
+      ano_cursado TEXT NOT NULL,
+      seccion TEXT NOT NULL,
+      nombre_materia TEXT NOT NULL,
+      lapso1 REAL,
+      lapso2 REAL,
+      lapso3 REAL,
+      definitiva REAL,
+      aprobada INTEGER,
+      fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (estudiante_id) REFERENCES estudiantes(id),
+      FOREIGN KEY (cierre_id) REFERENCES cierres_periodo(id)
+    )`
+  );
+
+  await dbConnection.query(
+    `CREATE TABLE IF NOT EXISTS promociones_historial (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cierre_id INTEGER,
+      estudiante_id INTEGER NOT NULL,
+      periodo_escolar TEXT NOT NULL,
+      ano_anterior TEXT NOT NULL,
+      seccion_anterior TEXT NOT NULL,
+      estado_anterior TEXT NOT NULL,
+      condicion_anterior TEXT NOT NULL,
+      accion TEXT NOT NULL,
+      ano_nuevo TEXT NOT NULL,
+      seccion_nueva TEXT NOT NULL,
+      estado_nuevo TEXT NOT NULL,
+      condicion_nueva TEXT NOT NULL,
+      materias_aprobadas INTEGER DEFAULT 0,
+      materias_reprobadas INTEGER DEFAULT 0,
+      promedio REAL,
+      observacion TEXT,
+      fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (estudiante_id) REFERENCES estudiantes(id),
+      FOREIGN KEY (cierre_id) REFERENCES cierres_periodo(id)
     )`
   );
 

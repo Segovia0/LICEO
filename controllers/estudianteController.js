@@ -233,6 +233,14 @@ exports.obtenerEstudiantes = async (req, res) => {
       return res.json({ success: true, count: 0, data: [] });
     }
 
+    // Si se solicitan solo los datos del estudiante sin cargar la matriz de notas de todos
+    if (String(req.query.sinNotas || req.query.soloEstudiantes) === 'true') {
+      const data = estudiantes.map((estudiante) =>
+        mapearEstudiante(estudiante, [])
+      );
+      return res.json({ success: true, count: data.length, data });
+    }
+
     const ids = estudiantes.map((estudiante) => estudiante.id);
     const placeholders = ids.map(() => '?').join(',');
 
@@ -569,6 +577,88 @@ exports.actualizarNotas = async (req, res) => {
 
     console.error('[ERROR] actualizarNotas:', error);
     res.status(500).json({ success: false, message: 'Error al actualizar calificaciones' });
+  }
+};
+
+// 4.1. Obtener calificaciones y datos académicos de un estudiante bajo demanda
+exports.obtenerNotasEstudiante = async (req, res) => {
+  try {
+    const id = parsearId(req.params.id);
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'ID de estudiante inválido' });
+    }
+
+    const filas = await dbConnection.query(
+      `SELECT id, nombre_apellido, cedula, fecha_nacimiento, ano_cursar, seccion,
+              condicion, codigo_expediente, foto_url, estado, fecha_retiro, motivo_retiro, created_at
+       FROM estudiantes
+       WHERE id = ?`,
+      [id]
+    );
+
+    if (!filas || filas.length === 0) {
+      return res.status(404).json({ success: false, message: 'Estudiante no encontrado' });
+    }
+
+    const estudiante = filas[0];
+
+    // Consultar notas registradas del estudiante
+    let notasFilas = await dbConnection.query(
+      `SELECT id, nombre_materia AS nombre, lapso1, lapso2, lapso3
+       FROM notas
+       WHERE estudiante_id = ?
+       ORDER BY id ASC`,
+      [id]
+    );
+
+    // Si aún no tiene notas en la base de datos, inicializar con las asignaturas del pensum
+    if (!notasFilas || notasFilas.length === 0) {
+      for (const materia of MATERIAS_DEFECTO) {
+        await dbConnection.query(
+          `INSERT INTO notas (estudiante_id, nombre_materia, lapso1, lapso2, lapso3)
+           VALUES (?, ?, NULL, NULL, NULL)
+           ON CONFLICT(estudiante_id, nombre_materia) DO NOTHING`,
+          [id, materia]
+        );
+      }
+      notasFilas = await dbConnection.query(
+        `SELECT id, nombre_materia AS nombre, lapso1, lapso2, lapso3
+         FROM notas
+         WHERE estudiante_id = ?
+         ORDER BY id ASC`,
+        [id]
+      );
+    }
+
+    const notasConDef = notasConDefinitiva(notasFilas || []);
+
+    const estudianteMapeado = {
+      ...estudiante,
+      _id: estudiante.id,
+      nombreApellido: estudiante.nombre_apellido,
+      fechaNacimiento: estudiante.fecha_nacimiento,
+      anoCursar: estudiante.ano_cursar,
+      codigoExpediente: estudiante.codigo_expediente,
+      fotoUrl: estudiante.foto_url,
+      estado: estudiante.estado || 'Activo',
+      fechaRetiro: estudiante.fecha_retiro || null,
+      motivoRetiro: estudiante.motivo_retiro || null,
+      edad: calcularEdad(estudiante.fecha_nacimiento),
+      notas: notasConDef
+    };
+
+    res.json({
+      success: true,
+      data: {
+        estudiante: estudianteMapeado,
+        notas: notasConDef
+      },
+      estudiante: estudianteMapeado,
+      notas: notasConDef
+    });
+  } catch (error) {
+    console.error('[ERROR] obtenerNotasEstudiante:', error);
+    res.status(500).json({ success: false, message: 'Error al consultar las calificaciones del estudiante' });
   }
 };
 

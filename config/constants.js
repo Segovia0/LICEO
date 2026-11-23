@@ -145,12 +145,27 @@ function esEstadoValido(valor) {
   return ESTADOS.includes(valor);
 }
 
+const MAPA_PROXIMO_ANO = {
+  '1er Año': '2do Año',
+  '2do Año': '3er Año',
+  '3er Año': '4to Año',
+  '4to Año': '5to Año',
+  '5to Año': '5to Año'
+};
+
+function siguienteAno(ano) {
+  const norm = normalizarAno(ano);
+  return MAPA_PROXIMO_ANO[norm] || null;
+}
+
 module.exports = {
   ANOS,
   SECCIONES,
   CONDICIONES,
   ESTADOS,
   MATERIAS_DEFECTO,
+  MAPA_PROXIMO_ANO,
+  siguienteAno,
   normalizarTexto,
   normalizarAno,
   normalizarCondicion,
